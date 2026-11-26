@@ -1189,8 +1189,10 @@ export const tourApi = {
     });
     if (upErr) throw new Error(upErr.message);
 
+    const memberId = await resolveSupabaseMemberId();
     const { data: urlData } = sb.storage.from('tour-photos').getPublicUrl(path);
     const { error: dbErr } = await sb.from('photos').insert({
+      uploaded_by: memberId,
       storage_path: path,
       public_url: urlData.publicUrl,
       caption,
