@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  EXPLORE_DESTINATION_VIDEOS,
+  ORDERED_EXPLORE_VIDEOS,
+  resolveExploreVideoUrl,
+} from '../../config/exploreVideos';
 import { DEFAULT_EXPLORE_DESTINATIONS } from '../../data/defaultSeed';
-import { extractYouTubeId, getYouTubeThumbnailUrl, toYouTubeBackgroundEmbedUrl, toYouTubeEmbedUrl } from '../media';
+import {
+  extractYouTubeId,
+  getYouTubeThumbnailUrl,
+  toYouTubeBackgroundEmbedUrl,
+  toYouTubeEmbedUrl,
+} from '../media';
 import { tourApi } from '../tourApi';
 
 function installStorageMock() {
@@ -45,6 +55,9 @@ describe("Places We'll Explore — Sequence, Media Parsing & Admin Persistence",
     expect(embed).toContain('autoplay=0');
     expect(embed).toContain('controls=1');
 
+    const mutedEmbed = toYouTubeEmbedUrl('https://youtu.be/dQw4w9WgXcQ', { muted: true });
+    expect(mutedEmbed).toContain('mute=1');
+
     expect(getYouTubeThumbnailUrl('https://youtu.be/dQw4w9WgXcQ')).toBe(
       'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
     );
@@ -57,6 +70,40 @@ describe("Places We'll Explore — Sequence, Media Parsing & Admin Persistence",
     expect(bgEmbed).toContain('playlist=G5oeAwgew6k');
     expect(bgEmbed).toContain('controls=0');
     expect(bgEmbed).toContain('playsinline=1');
+  });
+
+  it('configures the exact 4 documentary YouTube videos muted & looped in centralized config', () => {
+    expect(ORDERED_EXPLORE_VIDEOS.map((v) => v.numberLabel)).toEqual(['01', '02', '03', '04']);
+    expect(ORDERED_EXPLORE_VIDEOS.map((v) => v.youtubeUrl)).toEqual([
+      'https://www.youtube.com/watch?v=oxF2UKB0VjY',
+      'https://www.youtube.com/watch?v=I99mhoJbWsY',
+      'https://www.youtube.com/watch?v=9-_VoCqNE_E',
+      'https://www.youtube.com/watch?v=CUT8YZfzaJ8',
+    ]);
+
+    const expectedIds = ['oxF2UKB0VjY', 'I99mhoJbWsY', '9-_VoCqNE_E', 'CUT8YZfzaJ8'];
+    ORDERED_EXPLORE_VIDEOS.forEach((video, idx) => {
+      const id = extractYouTubeId(video.youtubeUrl);
+      expect(id).toBe(expectedIds[idx]);
+
+      const bgUrl = toYouTubeBackgroundEmbedUrl(video.youtubeUrl);
+      expect(bgUrl).toContain(`youtube-nocookie.com/embed/${expectedIds[idx]}`);
+      expect(bgUrl).toContain('autoplay=1');
+      expect(bgUrl).toContain('mute=1');
+      expect(bgUrl).toContain('loop=1');
+      expect(bgUrl).toContain(`playlist=${expectedIds[idx]}`);
+      expect(bgUrl).toContain('controls=0');
+      expect(bgUrl).toContain('playsinline=1');
+
+      expect(DEFAULT_EXPLORE_DESTINATIONS[idx].youtube_url).toBe(video.youtubeUrl);
+    });
+
+    expect(resolveExploreVideoUrl('panam-nagar', '')).toBe(
+      EXPLORE_DESTINATION_VIDEOS['panam-nagar'].youtubeUrl,
+    );
+    expect(resolveExploreVideoUrl('panam-nagar', 'https://youtu.be/custom12345')).toBe(
+      'https://youtu.be/custom12345',
+    );
   });
 
   it('allows Admin to configure destination media and blocks non-admin members', async () => {

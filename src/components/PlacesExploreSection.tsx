@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
   Image as ImageIcon,
   MapPin,
-  Play,
   Plus,
   RotateCcw,
   Settings2,
@@ -13,23 +12,53 @@ import {
   Video,
   X,
 } from 'lucide-react';
+import { resolveExploreVideoUrl } from '../config/exploreVideos';
 import { useTour } from '../context/TourContext';
 import { DEFAULT_EXPLORE_DESTINATIONS } from '../data/defaultSeed';
-import { extractYouTubeId, getYouTubeThumbnailUrl, toYouTubeEmbedUrl } from '../lib/media';
+import { toBanglaDigits } from '../lib/i18n';
+import { extractYouTubeId, toYouTubeEmbedUrl } from '../lib/media';
 import { soundEngine } from '../lib/sound';
 import { tourApi } from '../lib/tourApi';
 import type { ExploreDestination, ExplorePhoto } from '../types/tour';
+import { ExploreScene } from './ExploreScene';
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false,
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  return reduced;
+}
 
 export const PlacesExploreSection: React.FC = () => {
   const { lang, state, session, isOnline, refreshState, showToast } = useTour();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const destinations = useMemo(() => {
     const raw =
       state?.settings.explore_destinations && state.settings.explore_destinations.length === 4
         ? state.settings.explore_destinations
         : DEFAULT_EXPLORE_DESTINATIONS;
-    return [...raw].sort((a, b) => a.order - b.order);
+    return [...raw]
+      .sort((a, b) => a.order - b.order)
+      .map((d) => ({
+        ...d,
+        youtube_url: resolveExploreVideoUrl(d.id, d.youtube_url),
+      }));
   }, [state?.settings.explore_destinations]);
+
+  const [activeSceneIndex, setActiveSceneIndex] = useState(0);
+  const [nearScenes, setNearScenes] = useState<Record<number, boolean>>({ 0: true });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -41,6 +70,94 @@ export const PlacesExploreSection: React.FC = () => {
   const [editingDest, setEditingDest] = useState<ExploreDestination | null>(null);
   const [savingMedia, setSavingMedia] = useState(false);
 
+  const sceneRefs = useRef<Array<HTMLElement | null>>([]);
+  const visibilityRatios = useRef<Record<number, number>>({});
+
+  const registerSceneRef = useCallback((index: number, el: HTMLElement | null) => {
+    sceneRefs.current[index] = el;
+  }, []);
+
+  // Track which scene dominates the viewport + lazy prewarm nearby scenes
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') {
+      setNearScenes({ 0: true, 1: true, 2: true, 3: true });
+      return;
+    }
+
+    const activeObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const idxAttr = entry.target.getAttribute('data-scene-index');
+          if (idxAttr === null) continue;
+          const idx = Number(idxAttr);
+          visibilityRatios.current[idx] = entry.isIntersecting ? entry.intersectionRatio : 0;
+        }
+
+        let bestIdx = 0;
+        let bestRatio = -1;
+        for (let i = 0; i < destinations.length; i += 1) {
+          const ratio = visibilityRatios.current[i] ?? 0;
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestIdx = i;
+          }
+        }
+        if (bestRatio > 0.08) {
+          setActiveSceneIndex(bestIdx);
+        }
+      },
+      { threshold: [0.1, 0.25, 0.45, 0.65, 0.85] },
+    );
+
+    const prewarmObserver = new IntersectionObserver(
+      (entries) => {
+        setNearScenes((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          for (const entry of entries) {
+            const idxAttr = entry.target.getAttribute('data-scene-index');
+            if (idxAttr === null) continue;
+            const idx = Number(idxAttr);
+            if (next[idx] !== entry.isIntersecting) {
+              next[idx] = entry.isIntersecting;
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      },
+      { rootMargin: '45% 0px 45% 0px', threshold: 0 },
+    );
+
+    sceneRefs.current.forEach((el) => {
+      if (el) {
+        activeObserver.observe(el);
+        prewarmObserver.observe(el);
+      }
+    });
+
+    return () => {
+      activeObserver.disconnect();
+      prewarmObserver.disconnect();
+    };
+  }, [destinations.length]);
+
+  const jumpToScene = useCallback(
+    (idx: number) => {
+      const clamped = Math.max(0, Math.min(destinations.length - 1, idx));
+      const el = sceneRefs.current[clamped];
+      if (!el) return;
+      soundEngine.playTick();
+      setActiveSceneIndex(clamped);
+      setNearScenes((prev) => ({ ...prev, [clamped]: true }));
+      el.scrollIntoView({
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    },
+    [destinations.length, prefersReducedMotion],
+  );
+
   const selectedIndex = destinations.findIndex((d) => d.id === selectedId);
   const selectedDest = selectedIndex >= 0 ? destinations[selectedIndex] : null;
   const isAdmin = Boolean(session?.isAdmin);
@@ -50,7 +167,7 @@ export const PlacesExploreSection: React.FC = () => {
     setSelectedId(dest.id);
     setActivePhotoIndex(0);
     setVideoFallback(false);
-    const hasValidVideo = Boolean(toYouTubeEmbedUrl(dest.youtube_url));
+    const hasValidVideo = Boolean(toYouTubeEmbedUrl(dest.youtube_url, { muted: true }));
     setDetailViewMode(dest.media_mode === 'youtube' && hasValidVideo ? 'youtube' : 'gallery');
   };
 
@@ -117,11 +234,7 @@ export const PlacesExploreSection: React.FC = () => {
       await tourApi.updateTourSettings({ explore_destinations: updatedList });
       await refreshState();
       setEditingDest(null);
-      showToast(
-        lang === 'bn'
-          ? 'গন্তব্যের মিডিয়া সংরক্ষিত হয়েছে'
-          : 'Destination media saved',
-      );
+      showToast(lang === 'bn' ? 'গন্তব্যের মিডিয়া সংরক্ষিত হয়েছে' : 'Destination media saved');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to save destination media');
     } finally {
@@ -137,139 +250,123 @@ export const PlacesExploreSection: React.FC = () => {
     }
   };
 
+  const activeDest = destinations[activeSceneIndex] ?? destinations[0];
+  const progressText =
+    lang === 'bn'
+      ? `${toBanglaDigits(activeDest.numberLabel)}/${toBanglaDigits(String(destinations.length).padStart(2, '0'))}`
+      : `${activeDest.numberLabel}/${String(destinations.length).padStart(2, '0')}`;
+
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      {/* Editorial Section Header */}
-      <div className="max-w-3xl">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#14452F]/20 dark:border-[#D4AF37]/30 bg-[#14452F]/6 dark:bg-[#D4AF37]/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#14452F] dark:text-[#D4AF37]">
-          <span>{lang === 'bn' ? '০১ — ০৪ • ঐতিহ্য ও সন্ধ্যার শহর' : '01 — 04 • HERITAGE & CITY NIGHTS'}</span>
+    <div className="relative bg-[#07140D]">
+      {/* Four Seamless Full-Screen Documentary Scenes */}
+      {destinations.map((dest, idx) => {
+        const withinWindow = Math.abs(idx - activeSceneIndex) <= 1;
+        const near = Boolean(nearScenes[idx]) && withinWindow;
+        return (
+          <ExploreScene
+            key={dest.id}
+            dest={dest}
+            index={idx}
+            total={destinations.length}
+            lang={lang}
+            isActive={idx === activeSceneIndex}
+            isNearViewport={near}
+            isOnline={isOnline}
+            isAdmin={isAdmin}
+            prefersReducedMotion={prefersReducedMotion}
+            nextDestination={destinations[idx + 1]}
+            onSceneRef={registerSceneRef}
+            onOpenDetails={openDestination}
+            onConfigureMedia={(target) =>
+              setEditingDest(JSON.parse(JSON.stringify(target)) as ExploreDestination)
+            }
+            onJumpToScene={jumpToScene}
+          />
+        );
+      })}
+
+      {/* Desktop Floating Documentary Chapter Rail (01/04 .. 04/04) */}
+      <aside
+        aria-label={lang === 'bn' ? 'গন্তব্য অগ্রগতি' : 'Destination Progress'}
+        className="hidden md:flex fixed right-5 top-1/2 -translate-y-1/2 z-30 flex-col items-end gap-2.5"
+      >
+        <div className="rounded-full border border-[#D4AF37]/35 bg-[#07140D]/75 backdrop-blur-md px-3 py-1 text-[11px] font-bold tracking-widest text-[#F2D184] shadow-lg">
+          {progressText}
         </div>
 
-        <h2 className="font-editorial text-3xl sm:text-5xl font-bold tracking-tight text-[#14452F] dark:text-[#FAF7F0] mt-3">
-          {lang === 'bn' ? 'যেসব জায়গা ঘুরে দেখব' : "Places We'll Explore"}
-        </h2>
-        <p className="text-sm sm:text-base font-medium text-[#C45C3E] dark:text-[#E58A6E] mt-1">
-          {lang === 'bn' ? "Places We'll Explore" : 'যেসব জায়গা ঘুরে দেখব'}
-        </p>
-        <p className="mt-3 text-sm sm:text-base text-[#4A5850] dark:text-[#B9C4BC] leading-relaxed italic">
-          {lang === 'bn'
-            ? '“একটি দিন, কয়েকটি গন্তব্য, আর অপেক্ষায় থাকা অসংখ্য স্মৃতি।” — A day, a few destinations, countless memories waiting to happen.'
-            : '“A day, a few destinations, countless memories waiting to happen.”'}
-        </p>
-      </div>
-
-      {/* 4 Editorial Destination Cards in Exact Sequence (01 -> 04) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-7">
-        {destinations.map((dest, idx) => {
-          const hasValidVideo = Boolean(toYouTubeEmbedUrl(dest.youtube_url));
-          const ytThumb = getYouTubeThumbnailUrl(dest.youtube_url);
-          const primaryPhoto = dest.photos[0]?.url || dest.fallback_image_url;
-          const cardPreviewSrc =
-            dest.media_mode === 'youtube' && hasValidVideo && ytThumb && !failedImages[ytThumb]
-              ? ytThumb
-              : resolvePhotoUrl(dest, primaryPhoto);
-
-          return (
-            <article
-              key={dest.id}
-              onClick={() => openDestination(dest)}
-              className={`group relative rounded-3xl overflow-hidden bg-white dark:bg-[#131F19] border border-[#14452F]/12 dark:border-white/10 shadow-sm hover:shadow-xl hover:border-[#C45C3E]/45 dark:hover:border-[#D4AF37]/45 transition-all duration-300 cursor-pointer flex flex-col ${
-                idx === 0 ? 'lg:translate-y-0' : idx === 1 ? 'lg:translate-y-2' : ''
-              }`}
-            >
-              {/* Immersive 16:10 Landscape Media Preview */}
-              <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#102C20]">
-                <img
-                  src={cardPreviewSrc}
-                  alt={`${dest.name_en} — ${dest.name_bn}`}
-                  onError={() => markImageFailed(cardPreviewSrc)}
-                  className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+        <div className="flex flex-col items-end gap-2 rounded-2xl border border-white/15 bg-[#07140D]/65 backdrop-blur-md p-2 shadow-xl">
+          {destinations.map((dest, idx) => {
+            const active = idx === activeSceneIndex;
+            const title = lang === 'bn' ? dest.name_bn : dest.name_en;
+            return (
+              <button
+                key={dest.id}
+                type="button"
+                onClick={() => jumpToScene(idx)}
+                aria-label={`${dest.numberLabel} ${title}`}
+                aria-current={active ? 'step' : undefined}
+                title={`${dest.numberLabel} — ${title}`}
+                className="group flex items-center gap-2 px-1.5 py-1 rounded-lg transition cursor-pointer"
+              >
+                <span
+                  className={`text-[11px] font-medium max-w-[130px] truncate transition-all ${
+                    active
+                      ? 'text-[#FAF7F0] opacity-100'
+                      : 'text-white/55 opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  {title}
+                </span>
+                <span
+                  className={`text-[10px] font-bold tabular-nums ${
+                    active ? 'text-[#D4AF37]' : 'text-white/50 group-hover:text-white/85'
+                  }`}
+                >
+                  {lang === 'bn' ? toBanglaDigits(dest.numberLabel) : dest.numberLabel}
+                </span>
+                <span
+                  className={`block rounded-full transition-all duration-300 ${
+                    active
+                      ? 'w-1.5 h-6 bg-[#D4AF37]'
+                      : 'w-1.5 h-2.5 bg-white/30 group-hover:bg-white/65'
+                  }`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A1911]/85 via-[#0A1911]/20 to-transparent" />
+              </button>
+            );
+          })}
+        </div>
+      </aside>
 
-                {/* Number Pill + Media Type Badge */}
-                <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
-                  <span className="rounded-full bg-[#FAF7F0]/95 dark:bg-[#0E1612]/90 text-[#14452F] dark:text-[#D4AF37] px-3.5 py-1 text-xs font-bold tracking-widest shadow-sm">
-                    {dest.numberLabel}
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    {hasValidVideo && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#C45C3E] text-white px-2.5 py-1 text-[11px] font-semibold shadow-sm">
-                        <Video className="w-3 h-3" />
-                        <span>{lang === 'bn' ? 'ভিডিও' : 'Video'}</span>
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-xs text-white px-2.5 py-1 text-[11px] font-medium">
-                      <ImageIcon className="w-3 h-3" />
-                      <span>{dest.photos.length}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Play overlay if primary mode is YouTube */}
-                {dest.media_mode === 'youtube' && hasValidVideo && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="w-14 h-14 rounded-full bg-[#FAF7F0]/90 text-[#14452F] flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                      <Play className="w-6 h-6 fill-current ml-0.5" />
-                    </span>
-                  </div>
-                )}
-
-                {/* Bottom Overlay Titles */}
-                <div className="absolute bottom-4 left-5 right-5 text-[#FAF7F0]">
-                  <div className="text-xs font-medium text-[#F2D184]">
-                    {lang === 'bn' ? dest.name_en : dest.name_bn}
-                  </div>
-                  <h3 className="font-editorial text-2xl sm:text-3xl font-bold leading-snug mt-0.5">
-                    {lang === 'bn' ? dest.name_bn : dest.name_en}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#C45C3E] dark:text-[#E58A6E]">
-                    {lang === 'bn' ? dest.tagline_bn : dest.tagline_en}
-                  </p>
-                  <p className="mt-2 text-sm text-[#3F4D45] dark:text-[#C5D1C9] leading-relaxed">
-                    {lang === 'bn' ? dest.description_bn : dest.description_en}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-black/5 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1.5 text-[#5C6A62] dark:text-[#9AA89F]">
-                    <MapPin className="w-3.5 h-3.5 text-[#C45C3E]" />
-                    <span className="truncate max-w-[220px]">
-                      {lang === 'bn' ? dest.location_label_bn : dest.location_label_en}
-                    </span>
-                  </span>
-
-                  <div className="flex items-center gap-2">
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setEditingDest(JSON.parse(JSON.stringify(dest)) as ExploreDestination);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-xl border border-[#14452F]/20 dark:border-white/15 px-2.5 py-1.5 text-[11px] font-semibold hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                      >
-                        <Settings2 className="w-3.5 h-3.5" />
-                        <span>{lang === 'bn' ? 'মিডিয়া সেট' : 'Configure Media'}</span>
-                      </button>
-                    )}
-                    <span className="font-bold text-[#14452F] dark:text-[#D4AF37] group-hover:underline">
-                      {lang === 'bn' ? 'বিস্তারিত দেখুন →' : 'Explore →'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      {/* Mobile Compact Documentary Progress Pill (01/04 .. 04/04) */}
+      <nav
+        aria-label={lang === 'bn' ? 'গন্তব্য অগ্রগতি' : 'Destination Progress'}
+        className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-[#D4AF37]/35 bg-[#07140D]/85 backdrop-blur-md px-3.5 py-1.5 text-xs text-[#FAF7F0] shadow-2xl max-w-[calc(100vw-2rem)]"
+      >
+        <span className="font-bold tracking-wider text-[#F2D184] tabular-nums shrink-0">
+          {progressText}
+        </span>
+        <span className="h-3 w-px bg-white/20 shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {destinations.map((dest, idx) => {
+            const active = idx === activeSceneIndex;
+            return (
+              <button
+                key={dest.id}
+                type="button"
+                onClick={() => jumpToScene(idx)}
+                aria-label={`${dest.numberLabel} ${lang === 'bn' ? dest.name_bn : dest.name_en}`}
+                aria-current={active ? 'step' : undefined}
+                className={`h-2 rounded-full transition-all cursor-pointer ${
+                  active ? 'w-6 bg-[#D4AF37]' : 'w-2 bg-white/30'
+                }`}
+              />
+            );
+          })}
+        </div>
+        <span className="text-[11px] font-medium text-white/85 truncate max-w-[130px]">
+          {lang === 'bn' ? activeDest.name_bn : activeDest.name_en}
+        </span>
+      </nav>
 
       {/* Expanded Destination Detail Modal */}
       {selectedDest && (
@@ -281,15 +378,15 @@ export const PlacesExploreSection: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#FAF7F0] dark:bg-[#131F19] border border-[#14452F]/15 dark:border-white/15 shadow-2xl"
           >
-            {/* Modal Media Viewer */}
+            {/* Modal Media Viewer (Muted video only) */}
             <div className="relative bg-[#0B1F16]">
               {detailViewMode === 'youtube' &&
-              toYouTubeEmbedUrl(selectedDest.youtube_url) &&
+              toYouTubeEmbedUrl(selectedDest.youtube_url, { muted: true }) &&
               isOnline &&
               !videoFallback ? (
                 <div className="aspect-video w-full">
                   <iframe
-                    src={toYouTubeEmbedUrl(selectedDest.youtube_url) || ''}
+                    src={toYouTubeEmbedUrl(selectedDest.youtube_url, { muted: true }) || ''}
                     title={selectedDest.name_en}
                     allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -348,7 +445,6 @@ export const PlacesExploreSection: React.FC = () => {
                 </div>
               )}
 
-              {/* Close Modal Button */}
               <button
                 type="button"
                 onClick={() => setSelectedId(null)}
@@ -359,9 +455,7 @@ export const PlacesExploreSection: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Controls & Content */}
             <div className="p-5 sm:p-7 space-y-5">
-              {/* Media Mode Switcher + Thumbnail Strip */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <button
@@ -379,7 +473,7 @@ export const PlacesExploreSection: React.FC = () => {
                     </span>
                   </button>
 
-                  {toYouTubeEmbedUrl(selectedDest.youtube_url) && (
+                  {toYouTubeEmbedUrl(selectedDest.youtube_url, { muted: true }) && (
                     <button
                       type="button"
                       onClick={() => {
@@ -393,12 +487,11 @@ export const PlacesExploreSection: React.FC = () => {
                       }`}
                     >
                       <Video className="w-3.5 h-3.5" />
-                      <span>{lang === 'bn' ? 'ইউটিউব ভিডিও' : 'YouTube Video'}</span>
+                      <span>{lang === 'bn' ? 'ইউটিউব ভিডিও (নিঃশব্দ)' : 'YouTube Video (Muted)'}</span>
                     </button>
                   )}
                 </div>
 
-                {/* Sequence Switcher 01 <-> 04 */}
                 <div className="flex items-center gap-2 text-xs">
                   <button
                     type="button"
@@ -456,7 +549,6 @@ export const PlacesExploreSection: React.FC = () => {
                 </p>
               </div>
 
-              {/* Highlights */}
               <div className="rounded-2xl bg-white dark:bg-[#0D1511] border border-[#14452F]/10 dark:border-white/10 p-4">
                 <div className="text-xs font-bold uppercase tracking-wider text-[#5C6A62] mb-2">
                   {lang === 'bn' ? 'বিশেষ আকর্ষণ' : 'Destination Highlights'}
@@ -473,7 +565,6 @@ export const PlacesExploreSection: React.FC = () => {
                 </ul>
               </div>
 
-              {/* External Map Link + Admin Configure Button */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-black/5 dark:border-white/10">
                 <a
                   href={`https://www.openstreetmap.org/?mlat=${selectedDest.lat}&mlon=${selectedDest.lng}#map=16/${selectedDest.lat}/${selectedDest.lng}`}
@@ -535,10 +626,9 @@ export const PlacesExploreSection: React.FC = () => {
               </button>
             </div>
 
-            {/* Primary Display Mode */}
             <div>
               <label className="block text-xs font-semibold mb-1.5">
-                {lang === 'bn' ? 'কার্ডে প্রদর্শিত প্রধান মিডিয়া' : 'Primary Card Display Mode'}
+                {lang === 'bn' ? 'কার্ডে প্রদর্শিত প্রধান মিডিয়া' : 'Primary Scene Display Mode'}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -566,7 +656,6 @@ export const PlacesExploreSection: React.FC = () => {
               </div>
             </div>
 
-            {/* YouTube URL */}
             <div>
               <label className="block text-xs font-semibold mb-1">
                 {lang === 'bn' ? 'YouTube ভিডিও লিংক (ঐচ্ছিক)' : 'YouTube Video URL (Optional)'}
@@ -597,7 +686,6 @@ export const PlacesExploreSection: React.FC = () => {
               )}
             </div>
 
-            {/* Multiple Photos Gallery Config */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold">
@@ -707,6 +795,6 @@ export const PlacesExploreSection: React.FC = () => {
           </form>
         </div>
       )}
-    </section>
+    </div>
   );
 };

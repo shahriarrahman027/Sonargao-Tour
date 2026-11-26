@@ -31,10 +31,14 @@ export function extractYouTubeId(rawUrl: string): string | null {
   return null;
 }
 
-export function toYouTubeEmbedUrl(rawUrl: string): string | null {
+export function toYouTubeEmbedUrl(
+  rawUrl: string,
+  options?: { muted?: boolean },
+): string | null {
   const id = extractYouTubeId(rawUrl);
   if (!id) return null;
-  return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=0&controls=1`;
+  const muteParam = options?.muted ? '&mute=1' : '';
+  return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=0&controls=1&playsinline=1${muteParam}`;
 }
 
 /**

@@ -1,3 +1,4 @@
+import { EXPLORE_DESTINATION_VIDEOS } from '../config/exploreVideos';
 import type {
   ActivityLogEntry,
   Badge,
@@ -38,7 +39,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
       'মোগল ও ঔপনিবেশিক আমলের অনন্য কারুকাজ',
       'সকালের আলোয় গ্রুপ ফটোসেশনের সেরা জায়গা',
     ],
-    media_mode: 'gallery',
+    media_mode: 'youtube',
     fallback_image_url: '/images/explore-panam-nagar.svg',
     photos: [
       {
@@ -47,7 +48,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
         caption_bn: 'পানাম নগরের ঐতিহাসিক বণিক রাস্তা (অ্যাডমিন থেকে আসল ছবি যোগ করুন)',
       },
     ],
-    youtube_url: '',
+    youtube_url: EXPLORE_DESTINATION_VIDEOS['panam-nagar'].youtubeUrl,
     lat: 23.6458,
     lng: 90.6012,
     location_label_en: 'Panam Nagar, Sonargaon, Narayanganj',
@@ -75,7 +76,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
       'চিনি-টিকরি মোজাইক ও খিলানযুক্ত বারান্দা',
       'শান্ত পুকুরপাড় ও বিশ্রামের সুন্দর পরিবেশ',
     ],
-    media_mode: 'gallery',
+    media_mode: 'youtube',
     fallback_image_url: '/images/explore-jomidar-bari.svg',
     photos: [
       {
@@ -84,7 +85,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
         caption_bn: 'বড় জমিদার বাড়ির প্রাসাদ দৃশ্য (অ্যাডমিন থেকে ছবি বা ভিডিও যোগ করুন)',
       },
     ],
-    youtube_url: '',
+    youtube_url: EXPLORE_DESTINATION_VIDEOS['boro-jomidar-bari'].youtubeUrl,
     lat: 23.6442,
     lng: 90.5979,
     location_label_en: 'Boro Sardar Bari, Sonargaon Complex',
@@ -112,7 +113,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
       'স্থানীয় কারুশিল্পীদের স্টল ও গ্রামীণ মেলা',
       'প্রবেশ পথে স্টুডেন্ট আইডি কার্ডে ছাড়ের সুযোগ',
     ],
-    media_mode: 'gallery',
+    media_mode: 'youtube',
     fallback_image_url: '/images/explore-museum-crafts.svg',
     photos: [
       {
@@ -121,7 +122,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
         caption_bn: 'লোকশিল্প জাদুঘর ও কারুস্টল (অ্যাডমিন থেকে কাস্টমাইজযোগ্য)',
       },
     ],
-    youtube_url: '',
+    youtube_url: EXPLORE_DESTINATION_VIDEOS['museum-folk-art'].youtubeUrl,
     lat: 23.6435,
     lng: 90.5975,
     location_label_en: 'Bangladesh Folk Arts & Crafts Foundation, Sonargaon',
@@ -149,7 +150,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
       'বিউটি লাচ্ছি, কাবাব ও নাজিরাবাজারের বিরিয়ানি ডিনার',
       'রাতের আলোকিত শহরের প্রাণবন্ত আড্ডা',
     ],
-    media_mode: 'gallery',
+    media_mode: 'youtube',
     fallback_image_url: '/images/explore-puran-dhaka.svg',
     photos: [
       {
@@ -158,7 +159,7 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
         caption_bn: 'সন্ধ্যার পুরান ঢাকা ও খাবারের অলিগলি (অ্যাডমিন থেকে ছবি/ভিডিও যোগ করুন)',
       },
     ],
-    youtube_url: '',
+    youtube_url: EXPLORE_DESTINATION_VIDEOS['puran-dhaka-evening'].youtubeUrl,
     lat: 23.7165,
     lng: 90.4018,
     location_label_en: 'Lalbagh, Chawkbazar & Nazirabazar, Puran Dhaka',

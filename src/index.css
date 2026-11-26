@@ -58,6 +58,17 @@ body {
   background-image: radial-gradient(rgba(250, 247, 240, 0.03) 1px, transparent 0);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .explore-motion {
+    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 /* Print layout for Final Tour Report */
 @media print {
   body {
