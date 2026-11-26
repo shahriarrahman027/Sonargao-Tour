@@ -61,14 +61,14 @@ describe("Places We'll Explore — Sequence, Media Parsing & Admin Persistence",
 
   it('allows Admin to configure destination media and blocks non-admin members', async () => {
     // Non-admin blocked
-    await tourApi.loginWithStudentId('DIU-101');
+    await tourApi.loginWithStudentId('251-15-008');
     await expect(
       tourApi.updateTourSettings({ explore_destinations: DEFAULT_EXPLORE_DESTINATIONS }),
     ).rejects.toThrow(/Forbidden/i);
     await tourApi.logout();
 
     // Admin allowed & persisted
-    await tourApi.loginWithStudentId('DIU-102');
+    await tourApi.loginWithStudentId('251-15-027');
     await tourApi.elevateAdmin('admin-pass');
 
     const updated = DEFAULT_EXPLORE_DESTINATIONS.map((d) =>

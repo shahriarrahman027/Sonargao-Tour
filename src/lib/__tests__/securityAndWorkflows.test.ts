@@ -25,24 +25,45 @@ describe('End-to-End QA: Finance, Access Control, Audit & Workflows', () => {
     installStorageMock();
   });
 
-  it('rejects unauthorized DIU student IDs and enforces group passcode when enabled', async () => {
-    await expect(tourApi.loginWithStudentId('FAKE-999')).rejects.toThrow(/Unauthorized/i);
+  it('allows all 6 authorized student IDs individually (with space trimming) and rejects invalid IDs', async () => {
+    const validCases = [
+      ['251-15-008', 'mahadi', 'member'],
+      [' 251-15-053 ', 'seam', 'member'],
+      ['251-15-554', 'ashik', 'member'],
+      ['251-15-871', 'safin', 'member'],
+      ['253-15-078', 'shoaib', 'member'],
+      ['  251-15-027  ', 'shahriar', 'admin'],
+    ] as const;
 
-    await tourApi.loginWithStudentId('DIU-102');
+    for (const [id, expectedSlug, expectedRole] of validCases) {
+      const sess = await tourApi.loginWithStudentId(id);
+      expect(sess.member.slug).toBe(expectedSlug);
+      expect(sess.member.role).toBe(expectedRole);
+      expect(sess.isAdmin).toBe(false);
+      await tourApi.logout();
+    }
+
+    await expect(tourApi.loginWithStudentId('FAKE-999')).rejects.toThrow(/Unauthorized/i);
+    await expect(tourApi.loginWithStudentId('251-15-999')).rejects.toThrow(/Unauthorized/i);
+    await expect(tourApi.loginWithStudentId('DIU-101')).rejects.toThrow(/Unauthorized/i);
+  });
+
+  it('enforces group passcode when enabled', async () => {
+    await tourApi.loginWithStudentId('251-15-027');
     await tourApi.elevateAdmin('shahriar-pass');
     await tourApi.updateGroupPasscode(true, 'tour2026');
     await tourApi.logout();
 
-    await expect(tourApi.loginWithStudentId('DIU-101')).rejects.toThrow(/passcode/i);
-    await expect(tourApi.loginWithStudentId('DIU-101', 'wrong')).rejects.toThrow(/passcode/i);
+    await expect(tourApi.loginWithStudentId('251-15-008')).rejects.toThrow(/passcode/i);
+    await expect(tourApi.loginWithStudentId('251-15-008', 'wrong')).rejects.toThrow(/passcode/i);
 
-    const session = await tourApi.loginWithStudentId('DIU-101', 'tour2026');
+    const session = await tourApi.loginWithStudentId('251-15-008', 'tour2026');
     expect(session.member.slug).toBe('mahadi');
     expect(session.isAdmin).toBe(false);
   });
 
   it('prevents regular members from elevating admin or modifying financial records', async () => {
-    await tourApi.loginWithStudentId('DIU-101');
+    await tourApi.loginWithStudentId('251-15-008');
     await expect(tourApi.elevateAdmin('secret123')).rejects.toThrow(/Only Shahriar/i);
 
     await expect(
@@ -67,7 +88,7 @@ describe('End-to-End QA: Finance, Access Control, Audit & Workflows', () => {
   });
 
   it('runs full 6-member tour accounting scenario: contributions, equal tickets, custom biriyani, personal expense, edit, void, and persistence', async () => {
-    await tourApi.loginWithStudentId('DIU-102'); // Shahriar
+    await tourApi.loginWithStudentId('251-15-027'); // Shahriar
     await tourApi.elevateAdmin('shahriar-secure-pass');
 
     // 1. Add ৳1,000 cash contributions from all 6 members (= ৳6,000 total)
@@ -177,7 +198,7 @@ describe('End-to-End QA: Finance, Access Control, Audit & Workflows', () => {
   });
 
   it('blocks financial mutations while offline and supports social/checklist workflows', async () => {
-    const sess = await tourApi.loginWithStudentId('DIU-102');
+    const sess = await tourApi.loginWithStudentId('251-15-027');
     await tourApi.elevateAdmin('shahriar-secure-pass');
 
     // Polls, notes, checklist
