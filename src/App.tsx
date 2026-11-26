@@ -5,6 +5,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminUnlockModal } from './components/AdminUnlockModal';
 import { ChecklistSection } from './components/ChecklistSection';
 import { CrewSection } from './components/CrewSection';
+import { DeveloperCredit } from './components/DeveloperCredit';
 import { FinalReportSection } from './components/FinalReportSection';
 import { FinanceDashboard } from './components/FinanceDashboard';
 import { HomepageSection } from './components/HomepageSection';
@@ -90,7 +91,7 @@ const TourShell: React.FC = () => {
         {activeTab === 'admin' && <AdminDashboard />}
       </main>
 
-      <footer className="no-print border-t border-[#14452F]/10 dark:border-white/10 py-6 px-4 text-center text-xs text-[#5C6A62] dark:text-[#9AA89F]">
+      <footer className="no-print border-t border-[#14452F]/10 dark:border-white/10 py-7 px-4 text-center text-xs text-[#5C6A62] dark:text-[#9AA89F]">
         <div className="font-editorial font-bold text-[#14452F] dark:text-[#D4AF37]">
           {lang === 'bn' ? state.settings.website_name_bn : state.settings.website_name_en}
         </div>
@@ -98,6 +99,7 @@ const TourShell: React.FC = () => {
           {lang === 'bn' ? state.settings.tagline_bn : state.settings.tagline_en} •{' '}
           {lang === 'bn' ? '২৮ নভেম্বর ২০২৬' : '28 Nov 2026'}
         </div>
+        <DeveloperCredit />
       </footer>
 
       <AdminUnlockModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
