@@ -201,4 +201,24 @@ describe('Global Background Music System', () => {
 
     manager.dispose();
   });
+
+  it('resolves interrupted fade transitions cleanly during rapid section switching', async () => {
+    const manager = new GlobalMusicManager();
+
+    const p1 = manager.setActiveTrack('home');
+    await vi.runAllTimersAsync();
+    await p1;
+
+    // Rapidly switch home -> journey -> explore mid-fade without awaiting intermediate calls
+    const p2 = manager.setActiveTrack('journey');
+    const p3 = manager.setActiveTrack('explore');
+    await vi.runAllTimersAsync();
+    await Promise.all([p2, p3]);
+
+    expect(createdAudios[0].src).toBe('/audio/explore.mp3');
+    expect(manager.getSnapshot().currentTrack).toBe('explore');
+    expect(manager.getSnapshot().isPlaying).toBe(true);
+
+    manager.dispose();
+  });
 });

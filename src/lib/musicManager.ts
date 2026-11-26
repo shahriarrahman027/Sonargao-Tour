@@ -90,6 +90,11 @@ export class GlobalMusicManager {
       clearInterval(this.fadeTimer);
       this.fadeTimer = null;
     }
+    if (this.fadeResolve) {
+      const resolve = this.fadeResolve;
+      this.fadeResolve = null;
+      resolve();
+    }
   }
 
   private fadeVolume(from: number, to: number, durationMs: number): Promise<void> {
@@ -105,6 +110,7 @@ export class GlobalMusicManager {
     audio.volume = from;
 
     return new Promise((resolve) => {
+      this.fadeResolve = resolve;
       this.fadeTimer = window.setInterval(() => {
         currentStep += 1;
         const progress = Math.min(1, currentStep / steps);
@@ -113,7 +119,6 @@ export class GlobalMusicManager {
         }
         if (progress >= 1) {
           this.cancelFade();
-          resolve();
         }
       }, FADE_STEP_MS);
     });

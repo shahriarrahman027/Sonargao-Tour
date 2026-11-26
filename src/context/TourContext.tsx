@@ -129,10 +129,12 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleUnlock = (event: Event) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest?.('[data-music-control="true"]')) return;
+      window.removeEventListener('pointerdown', handleUnlock, { capture: true });
+      window.removeEventListener('keydown', handleUnlock, { capture: true });
       void musicManager.play();
     };
-    window.addEventListener('pointerdown', handleUnlock, { once: true, capture: true });
-    window.addEventListener('keydown', handleUnlock, { once: true, capture: true });
+    window.addEventListener('pointerdown', handleUnlock, { capture: true });
+    window.addEventListener('keydown', handleUnlock, { capture: true });
     return () => {
       window.removeEventListener('pointerdown', handleUnlock, { capture: true });
       window.removeEventListener('keydown', handleUnlock, { capture: true });
