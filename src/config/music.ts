@@ -19,10 +19,10 @@ const env = (import.meta.env ?? {}) as Record<string, string | undefined>;
 export const MUSIC_TRACKS: Record<MusicTrackKey, MusicTrackConfig> = {
   login: {
     key: 'login',
-    fileName: 'login.mp3',
+    fileName: 'login-new.mp3',
     labelBn: 'প্রবেশ সংগীত',
     labelEn: 'Gate Theme',
-    url: env.VITE_MUSIC_LOGIN_URL?.trim() || '/audio/login.mp3',
+    url: env.VITE_MUSIC_LOGIN_URL?.trim() || '/audio/login-new.mp3',
   },
   home: {
     key: 'home',

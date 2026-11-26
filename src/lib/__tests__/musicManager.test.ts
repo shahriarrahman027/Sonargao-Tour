@@ -69,7 +69,7 @@ describe('Global Background Music System', () => {
   });
 
   it('configures the 5 local MP3 paths and maps every route accurately', () => {
-    expect(MUSIC_TRACKS.login.url).toBe('/audio/login.mp3');
+    expect(MUSIC_TRACKS.login.url).toBe('/audio/login-new.mp3');
     expect(MUSIC_TRACKS.home.url).toBe('/audio/home.mp3');
     expect(MUSIC_TRACKS.journey.url).toBe('/audio/journey.mp3');
     expect(MUSIC_TRACKS.money.url).toBe('/audio/money.mp3');
@@ -96,7 +96,7 @@ describe('Global Background Music System', () => {
 
     expect(createdAudios).toHaveLength(1);
     const audio = createdAudios[0];
-    expect(audio.src).toBe('/audio/login.mp3');
+    expect(audio.src).toBe('/audio/login-new.mp3');
     expect(manager.getSnapshot().isPlaying).toBe(true);
 
     // Simulate playback progress & re-render calling same track
