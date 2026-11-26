@@ -53,7 +53,7 @@ INSERT INTO public.member_credentials (member_id, student_id_hash)
 SELECT id,
   CASE slug
     WHEN 'mahadi'   THEN '14e55f7f6679a685abde05220969be8d6f384a9a813b7d9f6334cfbf02f3f82b'
-    WHEN 'shahriar' THEN 'eae102e7d6d2eb31e20ef3a8f0d8489f2d772f49632eb8bcc3b8427726726fa'
+    WHEN 'shahriar' THEN 'eae102e7d6d2eb31e20ef3a8f0d8489f2d772f49632eb8bcc3b8427726726fa7'
     WHEN 'seam'     THEN '3fe1e31c3827f81fd99b6e5c428494d683abbccce6941a2b2544ab266c0f73d9'
     WHEN 'ashik'    THEN '22deb4a93613035405e24b8d6201f35a7eddf71007093f8f74788a77eb3c50ac'
     WHEN 'safin'    THEN '9864275f74de5e46a989b217338458c744a4b9ef0d9b7a65a7aa4a1d4d323e14'
