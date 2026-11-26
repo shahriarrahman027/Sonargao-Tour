@@ -9,7 +9,6 @@ import {
   Lock,
   LogOut,
   Moon,
-  Music,
   Shield,
   Sparkles,
   Sun,
@@ -22,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { translations } from '../lib/i18n';
+import { GlobalMusicControl } from './GlobalMusicControl';
 
 export type NavTab =
   | 'home'
@@ -50,8 +50,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
     toggleTheme,
     soundMuted,
     toggleSoundMute,
-    musicPlaying,
-    toggleMusic,
     isOnline,
     isSupabaseMode,
     session,
@@ -140,18 +138,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
 
           {/* Controls */}
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={toggleMusic}
-              title={musicPlaying ? t.common.musicOn : t.common.musicOff}
-              className={`p-2 rounded-xl border text-xs transition cursor-pointer ${
-                musicPlaying
-                  ? 'border-[#14452F] bg-[#14452F]/10 text-[#14452F] dark:border-[#D4AF37] dark:text-[#D4AF37]'
-                  : 'border-[#14452F]/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5'
-              }`}
-            >
-              <Music className="w-4 h-4" />
-            </button>
+            <GlobalMusicControl />
 
             <button
               type="button"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { KeyRound, Lock, Moon, ShieldCheck, Sun, Users } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { translations } from '../lib/i18n';
+import { GlobalMusicControl } from './GlobalMusicControl';
 
 export const AccessGate: React.FC = () => {
   const { lang, toggleLang, theme, toggleTheme, gateStatus, login, isSupabaseMode } = useTour();
@@ -41,6 +42,7 @@ export const AccessGate: React.FC = () => {
           <span>{t.gate.badge}</span>
         </div>
         <div className="flex items-center gap-2">
+          <GlobalMusicControl variant="gate" />
           <button
             type="button"
             onClick={toggleLang}

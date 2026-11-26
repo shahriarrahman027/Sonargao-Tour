@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { TourProvider, useTour } from './context/TourContext';
 import { AccessGate } from './components/AccessGate';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -16,9 +16,20 @@ import { PlacesExploreSection } from './components/PlacesExploreSection';
 import { SocialSection } from './components/SocialSection';
 
 const TourShell: React.FC = () => {
-  const { session, loading, state, toast, lang } = useTour();
+  const { session, loading, state, toast, lang, syncMusicForRoute } = useTour();
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+    syncMusicForRoute(activeTab);
+  }, [loading, session, activeTab, syncMusicForRoute]);
+
+  const toastBanner = toast ? (
+    <div className="no-print fixed bottom-5 right-5 z-50 rounded-2xl bg-[#14452F] text-[#FAF7F0] px-4 py-3 text-xs font-semibold shadow-xl border border-[#D4AF37]/40">
+      {toast}
+    </div>
+  ) : null;
 
   if (loading) {
     return (
@@ -34,7 +45,12 @@ const TourShell: React.FC = () => {
   }
 
   if (!session) {
-    return <AccessGate />;
+    return (
+      <>
+        <AccessGate />
+        {toastBanner}
+      </>
+    );
   }
 
   if (!state) {
@@ -84,11 +100,7 @@ const TourShell: React.FC = () => {
 
       <AdminUnlockModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
 
-      {toast && (
-        <div className="no-print fixed bottom-5 right-5 z-50 rounded-2xl bg-[#14452F] text-[#FAF7F0] px-4 py-3 text-xs font-semibold shadow-xl border border-[#D4AF37]/40">
-          {toast}
-        </div>
-      )}
+      {toastBanner}
     </div>
   );
 };

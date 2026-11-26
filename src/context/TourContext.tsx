@@ -1,5 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import type { NavTab } from '../components/Navbar';
+import { resolveTrackKeyForSection } from '../config/music';
 import { computeFinancialSummary, type FinancialSummary } from '../lib/accounting';
+import { musicManager, type MusicSnapshot } from '../lib/musicManager';
 import { loadOfflineSnapshot } from '../lib/offlineCache';
 import { soundEngine } from '../lib/sound';
 import { tourApi, type FullTourState } from '../lib/tourApi';
@@ -14,7 +17,9 @@ interface TourContextValue {
   soundMuted: boolean;
   toggleSoundMute: () => void;
   musicPlaying: boolean;
+  musicState: MusicSnapshot;
   toggleMusic: () => void;
+  syncMusicForRoute: (activeTab: NavTab) => void;
   isOnline: boolean;
   isSupabaseMode: boolean;
   gateStatus: GateStatus | null;
@@ -44,7 +49,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [soundMuted, setSoundMuted] = useState(false);
-  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [musicState, setMusicState] = useState<MusicSnapshot>(() => musicManager.getSnapshot());
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
@@ -86,13 +91,26 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const next = !soundMuted;
     setSoundMuted(next);
     soundEngine.setMuted(next);
-    if (next) setMusicPlaying(false);
   }, [soundMuted]);
 
   const toggleMusic = useCallback(() => {
-    const playing = soundEngine.toggleAmbientMusic();
-    setMusicPlaying(playing);
-    if (playing) setSoundMuted(false);
+    void musicManager.toggle();
+  }, []);
+
+  const syncMusicForRoute = useCallback(
+    (activeTab: NavTab) => {
+      const trackKey = resolveTrackKeyForSection(Boolean(session), activeTab);
+      void musicManager.setActiveTrack(trackKey);
+    },
+    [session],
+  );
+
+  useEffect(() => {
+    const unsub = musicManager.subscribe(setMusicState);
+    return () => {
+      unsub();
+      musicManager.dispose();
+    };
   }, []);
 
   useEffect(() => {
@@ -214,8 +232,10 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTheme,
         soundMuted,
         toggleSoundMute,
-        musicPlaying,
+        musicPlaying: musicState.isPlaying,
+        musicState,
         toggleMusic,
+        syncMusicForRoute,
         isOnline,
         isSupabaseMode: tourApi.isSupabaseMode(),
         gateStatus,
