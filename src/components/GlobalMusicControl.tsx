@@ -63,6 +63,7 @@ export const GlobalMusicControl: React.FC<Props> = ({ variant = 'default' }) => 
   return (
     <button
       type="button"
+      data-music-control="true"
       onClick={handleClick}
       aria-label={titleText}
       aria-pressed={isPlaying}

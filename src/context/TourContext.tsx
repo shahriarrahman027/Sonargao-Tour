@@ -123,6 +123,23 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    if (!musicState.autoplayBlocked || musicState.userPaused || !musicState.isConfigured) {
+      return;
+    }
+    const handleUnlock = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('[data-music-control="true"]')) return;
+      void musicManager.play();
+    };
+    window.addEventListener('pointerdown', handleUnlock, { once: true, capture: true });
+    window.addEventListener('keydown', handleUnlock, { once: true, capture: true });
+    return () => {
+      window.removeEventListener('pointerdown', handleUnlock, { capture: true });
+      window.removeEventListener('keydown', handleUnlock, { capture: true });
+    };
+  }, [musicState.autoplayBlocked, musicState.userPaused, musicState.isConfigured]);
+
+  useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
     window.addEventListener('online', onOnline);

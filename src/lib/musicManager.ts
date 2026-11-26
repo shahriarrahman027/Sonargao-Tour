@@ -25,6 +25,7 @@ export class GlobalMusicManager {
   private autoplayBlocked = false;
   private hasError = false;
   private fadeTimer: number | null = null;
+  private fadeResolve: (() => void) | null = null;
   private transitionId = 0;
   private listeners = new Set<Listener>();
 
