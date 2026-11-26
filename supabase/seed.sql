@@ -1,11 +1,9 @@
 -- ============================================================================
--- ১ দিনের সস্তায় ট্যুর — Initial Seed Data & Storage Policies
+-- সস্তায় ১ দিনের ট্যুর — Initial Seed Data
 -- ============================================================================
 -- IMPORTANT BEFORE RUNNING IN PRODUCTION SUPABASE:
--- 1. Replace the placeholder DIU Student IDs below with the 6 actual DIU IDs
---    in order: Mahadi, Shahriar, Seam, Ashik, Safin, Shoaib.
--- 2. Replace 'CHANGE_THIS_SHAHRIAR_ADMIN_PASSWORD' with Shahriar's strong password.
--- 3. Student IDs are hashed with SHA-256 and never stored in plaintext.
+-- 1. All 6 DIU Student IDs are already pre-hashed (SHA-256) below—do NOT put plaintext IDs here.
+-- 2. Replace 'CHANGE_THIS_SHAHRIAR_ADMIN_PASSWORD' on line 67 with Shahriar's strong Admin password.
 -- ============================================================================
 
 INSERT INTO public.tour_settings (
@@ -13,12 +11,13 @@ INSERT INTO public.tour_settings (
   tour_date, start_location_bn, start_location_en,
   destinations_bn, destinations_en,
   estimated_budget_per_person, target_contribution_per_person,
-  announcement_bn, announcement_en
+  announcement_bn, announcement_en,
+  hero_video_url
 )
 VALUES (
   1,
-  '১ দিনের সস্তায় ট্যুর',
-  'Ek Diner Sostay Tour',
+  'সস্তায় ১ দিনের ট্যুর',
+  'Sostay 1 diner tour',
   'প্ল্যান ক্যানসেল না হইলেই হয়।',
   'As long as the plan doesn''t get cancelled.',
   '2026-11-28T06:30:00+06:00',
@@ -29,7 +28,8 @@ VALUES (
   1000.00,
   1000.00,
   '২৮ নভেম্বর ২০২৬ (শনিবার) সকাল ৬:৩০ মিনিটে সিঅ্যান্ডবি, সাভারে সবার উপস্থিতি নিশ্চিত করতে হবে। নগদ টাকা সাথে আনুন।',
-  'Report at C&B, Savar by 6:30 AM on Saturday, 28 Nov 2026. Bring cash for group fund & meals.'
+  'Report at C&B, Savar by 6:30 AM on Saturday, 28 Nov 2026. Bring cash for group fund & meals.',
+  'https://youtu.be/G5oeAwgew6k?si=EnBD6ttc1SEcLVmC'
 )
 ON CONFLICT (id) DO NOTHING;
 
