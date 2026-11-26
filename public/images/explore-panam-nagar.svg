@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <defs>
+    <linearGradient id="pSky" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#173D2B"/>
+      <stop offset="60%" stop-color="#285942"/>
+      <stop offset="100%" stop-color="#C45C3E" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#pSky)"/>
+  <circle cx="940" cy="180" r="95" fill="#F2D184" opacity="0.35"/>
+  <!-- Left & Right Historic Merchant Mansions -->
+  <rect x="70" y="250" width="380" height="360" fill="#2A1F1B"/>
+  <rect x="480" y="210" width="340" height="400" fill="#35251F"/>
+  <rect x="850" y="270" width="280" height="340" fill="#251B18"/>
+  <!-- Terracotta Arches & Pillars -->
+  <g fill="#B3543A" opacity="0.88">
+    <path d="M110 610V400C110 365 160 365 160 400V610Z"/>
+    <path d="M195 610V400C195 365 245 365 245 400V610Z"/>
+    <path d="M280 610V400C280 365 330 365 330 400V610Z"/>
+    <path d="M525 610V365C525 320 590 320 590 365V610Z"/>
+    <path d="M620 610V365C620 320 685 320 685 365V610Z"/>
+    <path d="M715 610V365C715 320 780 320 780 365V610Z"/>
+    <path d="M895 610V415C895 385 940 385 940 415V610Z"/>
+    <path d="M980 610V415C980 385 1025 385 1025 415V610Z"/>
+  </g>
+  <rect y="605" width="1200" height="145" fill="#132219"/>
+  <path d="M0 645 L1200 645" stroke="#D4AF37" stroke-opacity="0.28" stroke-width="2"/>
+  <text x="64" y="695" fill="#FAF7F0" fill-opacity="0.72" font-family="Georgia, serif" font-size="24">01 • PANAM NAGAR HERITAGE STREET</text>
+</svg>

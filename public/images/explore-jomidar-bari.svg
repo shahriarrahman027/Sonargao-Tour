@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <defs>
+    <linearGradient id="jSky" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#143B29"/>
+      <stop offset="65%" stop-color="#275B43"/>
+      <stop offset="100%" stop-color="#C89F3C" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#jSky)"/>
+  <!-- Grand Zamindar Palace Facade -->
+  <rect x="160" y="230" width="880" height="330" rx="6" fill="#EDE3CE"/>
+  <rect x="340" y="155" width="520" height="80" fill="#DFD2B7"/>
+  <polygon points="320,160 600,88 880,160" fill="#9E4831"/>
+  <!-- Classical Columns -->
+  <g fill="#C9BA9B">
+    <rect x="210" y="255" width="22" height="305"/>
+    <rect x="290" y="255" width="22" height="305"/>
+    <rect x="405" y="255" width="24" height="305"/>
+    <rect x="520" y="255" width="24" height="305"/>
+    <rect x="655" y="255" width="24" height="305"/>
+    <rect x="770" y="255" width="24" height="305"/>
+    <rect x="885" y="255" width="22" height="305"/>
+    <rect x="965" y="255" width="22" height="305"/>
+  </g>
+  <!-- Courtyard Reflecting Pond -->
+  <rect y="560" width="1200" height="190" fill="#102C20"/>
+  <ellipse cx="600" cy="640" rx="340" ry="38" fill="#1C4E39"/>
+  <text x="64" y="700" fill="#FAF7F0" fill-opacity="0.78" font-family="Georgia, serif" font-size="24">02 • SONARGAON BORO JOMIDAR BARI</text>
+</svg>

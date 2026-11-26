@@ -20,6 +20,34 @@ export interface Member {
   is_active: boolean;
 }
 
+export interface ExplorePhoto {
+  url: string;
+  caption_bn: string;
+  caption_en: string;
+}
+
+export interface ExploreDestination {
+  id: 'panam-nagar' | 'boro-jomidar-bari' | 'museum-folk-art' | 'puran-dhaka-evening';
+  order: number;
+  numberLabel: string;
+  name_en: string;
+  name_bn: string;
+  tagline_en: string;
+  tagline_bn: string;
+  description_en: string;
+  description_bn: string;
+  highlights_en: string[];
+  highlights_bn: string[];
+  media_mode: 'gallery' | 'youtube';
+  photos: ExplorePhoto[];
+  fallback_image_url: string;
+  youtube_url: string;
+  lat: number;
+  lng: number;
+  location_label_en: string;
+  location_label_bn: string;
+}
+
 export interface TourSettings {
   id: number;
   website_name_bn: string;
@@ -40,6 +68,7 @@ export interface TourSettings {
   ambient_sound_enabled: boolean;
   hero_video_url: string;
   hero_fallback_image_url: string;
+  explore_destinations?: ExploreDestination[];
   updated_at: string;
 }
 

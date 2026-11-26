@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" fill="none">
+  <defs>
+    <linearGradient id="mBg" x1="0" y1="0" x2="1200" y2="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A4430"/>
+      <stop offset="100%" stop-color="#4B2E24"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#mBg)"/>
+  <!-- Folk Art Pavilion & Artisan Stalls -->
+  <polygon points="160,290 600,150 1040,290" fill="#C45C3E"/>
+  <rect x="210" y="290" width="780" height="290" fill="#FAF7F0" fill-opacity="0.92"/>
+  <!-- Nakshi Kantha / Terracotta Motif Circles -->
+  <circle cx="380" cy="435" r="78" fill="#14452F" fill-opacity="0.14" stroke="#14452F" stroke-width="3"/>
+  <circle cx="380" cy="435" r="46" fill="#C89F3C" fill-opacity="0.65"/>
+  <circle cx="600" cy="435" r="78" fill="#C45C3E" fill-opacity="0.16" stroke="#C45C3E" stroke-width="3"/>
+  <polygon points="600,380 645,435 600,490 555,435" fill="#C45C3E"/>
+  <circle cx="820" cy="435" r="78" fill="#14452F" fill-opacity="0.14" stroke="#14452F" stroke-width="3"/>
+  <rect x="785" y="400" width="70" height="70" rx="14" fill="#14452F"/>
+  <rect y="580" width="1200" height="170" fill="#12271C"/>
+  <text x="64" y="695" fill="#FAF7F0" fill-opacity="0.82" font-family="Georgia, serif" font-size="24">03 • FOLK ART MUSEUM &amp; ARTISAN STALLS</text>
+</svg>

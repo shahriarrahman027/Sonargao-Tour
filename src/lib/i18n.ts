@@ -60,6 +60,7 @@ export const translations = {
   bn: {
     nav: {
       home: 'হোম',
+      explore: 'গন্তব্য',
       journey: 'ভ্রমণপথ',
       crew: 'টিম',
       money: 'হিসাব',
@@ -152,6 +153,7 @@ export const translations = {
   en: {
     nav: {
       home: 'Home',
+      explore: 'Explore',
       journey: 'Journey',
       crew: 'Crew',
       money: 'Money',

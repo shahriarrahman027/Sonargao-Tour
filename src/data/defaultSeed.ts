@@ -4,6 +4,7 @@ import type {
   ChecklistItem,
   Contribution,
   Expense,
+  ExploreDestination,
   FunEvent,
   ItineraryItem,
   Member,
@@ -13,6 +14,157 @@ import type {
   TourProgress,
   TourSettings,
 } from '../types/tour';
+
+export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
+  {
+    id: 'panam-nagar',
+    order: 1,
+    numberLabel: '01',
+    name_en: 'Panam Nagar',
+    name_bn: 'পানাম নগর',
+    tagline_en: 'Historic merchant street & century-old terracotta arches',
+    tagline_bn: 'শতবর্ষী ঐতিহ্যবাহী বণিক শহর ও স্থাপত্য',
+    description_en:
+      'Walk along the famous single-street ancient township of Sonargaon, lined with ornate 19th-century merchant mansions, weathered brick facades, and dramatic archways.',
+    description_bn:
+      'সোনারগাঁওয়ের বিখ্যাত ঐতিহাসিক পানাম নগরের সরু রাস্তা ধরে হাঁটুন—দুই পাশে উনিশ শতকের বণিকদের কারুকার্যময় ভবন, ইটের খিলান আর ছবি তোলার দারুণ সব ফ্রেম।',
+    highlights_en: [
+      '52 historic merchant buildings along a single street',
+      'Colonial & Mughal-inspired brick ornamentation',
+      'Best morning golden-hour group photography spot',
+    ],
+    highlights_bn: [
+      'একই রাস্তার দুই পাশে ৫২টি ঐতিহাসিক ভবন',
+      'মোগল ও ঔপনিবেশিক আমলের অনন্য কারুকাজ',
+      'সকালের আলোয় গ্রুপ ফটোসেশনের সেরা জায়গা',
+    ],
+    media_mode: 'gallery',
+    fallback_image_url: '/images/explore-panam-nagar.svg',
+    photos: [
+      {
+        url: '/images/explore-panam-nagar.svg',
+        caption_en: 'Panam Nagar heritage merchant street (placeholder — add your photos in Admin)',
+        caption_bn: 'পানাম নগরের ঐতিহাসিক বণিক রাস্তা (অ্যাডমিন থেকে আসল ছবি যোগ করুন)',
+      },
+    ],
+    youtube_url: '',
+    lat: 23.6458,
+    lng: 90.6012,
+    location_label_en: 'Panam Nagar, Sonargaon, Narayanganj',
+    location_label_bn: 'পানাম নগর, সোনারগাঁও, নারায়ণগঞ্জ',
+  },
+  {
+    id: 'boro-jomidar-bari',
+    order: 2,
+    numberLabel: '02',
+    name_en: 'Sonargaon Boro Jomidar Bari',
+    name_bn: 'সোনারগাঁও বড় জমিদার বাড়ি',
+    tagline_en: 'Restored grand zamindar residence & reflection pond',
+    tagline_bn: 'ঐতিহাসিক জমিদার প্রাসাদ, স্তম্ভ ও পুকুরপাড়',
+    description_en:
+      'Admire the majestic Boro Sardar Bari (Boro Jomidar Bari), featuring towering Corinthian-style pillars, mosaic courtyard detailing, and tranquil pondside views inside the heritage complex.',
+    description_bn:
+      'সোনারগাঁওয়ের বিশাল বড় সর্দার বাড়ি (বড় জমিদার বাড়ি)—সুউচ্চ স্তম্ভ, চিনি-টিকরি কারুকাজ, প্রশস্ত উঠান আর সামনের শান্ত পুকুরপাড় আমাদের নিয়ে যাবে পুরোনো জমিদারি আমলে।',
+    highlights_en: [
+      'Iconic restored zamindar mansion (Boro Sardar Bari)',
+      'Intricate Chini-Tikri mosaic & arched verandas',
+      'Peaceful courtyard & lakeside breeze',
+    ],
+    highlights_bn: [
+      'সংরক্ষিত ঐতিহাসিক বড় সর্দার বাড়ি',
+      'চিনি-টিকরি মোজাইক ও খিলানযুক্ত বারান্দা',
+      'শান্ত পুকুরপাড় ও বিশ্রামের সুন্দর পরিবেশ',
+    ],
+    media_mode: 'gallery',
+    fallback_image_url: '/images/explore-jomidar-bari.svg',
+    photos: [
+      {
+        url: '/images/explore-jomidar-bari.svg',
+        caption_en: 'Boro Jomidar Bari palace facade (placeholder — add photos or YouTube video)',
+        caption_bn: 'বড় জমিদার বাড়ির প্রাসাদ দৃশ্য (অ্যাডমিন থেকে ছবি বা ভিডিও যোগ করুন)',
+      },
+    ],
+    youtube_url: '',
+    lat: 23.6442,
+    lng: 90.5979,
+    location_label_en: 'Boro Sardar Bari, Sonargaon Complex',
+    location_label_bn: 'বড় সর্দার বাড়ি, সোনারগাঁও কমপ্লেক্স',
+  },
+  {
+    id: 'museum-folk-art',
+    order: 3,
+    numberLabel: '03',
+    name_en: 'Museum & Folk Art Stalls',
+    name_bn: 'জাদুঘর ও লোকশিল্পের স্টল',
+    tagline_en: 'Bangladesh Folk Arts & Crafts Museum & artisan market',
+    tagline_bn: 'বাংলার ঐতিহ্যবাহী লোকশিল্প, নকশিকাঁথা ও কারুমেলা',
+    description_en:
+      'Explore traditional Bangladeshi crafts, Nakshi Kantha, terracotta, wooden folk sculptures, and browse lively local handicraft stalls for souvenirs and snacks.',
+    description_bn:
+      'বাংলাদেশ লোক ও কারুশিল্প জাদুঘরের ভেতরে আবহমান বাংলার নকশিকাঁথা, মৃৎশিল্প, দারুশিল্প দেখুন এবং বাইরের কারুশিল্প স্টল থেকে স্মৃতিচিহ্ন ও স্থানীয় খাবার ঘুরে দেখুন।',
+    highlights_en: [
+      'Galleries of Nakshi Kantha, pottery & brass crafts',
+      'Traditional artisan workshops & open-air stalls',
+      'Student ID discount opportunity at entry gate',
+    ],
+    highlights_bn: [
+      'নকশিকাঁথা, পোড়ামাটি ও পিতলের ঐতিহ্যবাহী গ্যালারি',
+      'স্থানীয় কারুশিল্পীদের স্টল ও গ্রামীণ মেলা',
+      'প্রবেশ পথে স্টুডেন্ট আইডি কার্ডে ছাড়ের সুযোগ',
+    ],
+    media_mode: 'gallery',
+    fallback_image_url: '/images/explore-museum-crafts.svg',
+    photos: [
+      {
+        url: '/images/explore-museum-crafts.svg',
+        caption_en: 'Folk Arts Museum & handicraft stalls (placeholder — configurable by Admin)',
+        caption_bn: 'লোকশিল্প জাদুঘর ও কারুস্টল (অ্যাডমিন থেকে কাস্টমাইজযোগ্য)',
+      },
+    ],
+    youtube_url: '',
+    lat: 23.6435,
+    lng: 90.5975,
+    location_label_en: 'Bangladesh Folk Arts & Crafts Foundation, Sonargaon',
+    location_label_bn: 'বাংলাদেশ লোক ও কারুশিল্প ফাউন্ডেশন, সোনারগাঁও',
+  },
+  {
+    id: 'puran-dhaka-evening',
+    order: 4,
+    numberLabel: '04',
+    name_en: 'Evening in Puran Dhaka',
+    name_bn: 'সন্ধ্যার পুরান ঢাকা',
+    tagline_en: 'Lantern-lit heritage lanes, bustling rickshaws & biriyani feast',
+    tagline_bn: 'সন্ধ্যার আলোকিত অলিগলি, রিকশার টুংটাং আর বিরিয়ানি আড্ডা',
+    description_en:
+      'Transition from quiet heritage ruins to the electric evening pulse of Old Dhaka—gliding through historic lanes by rickshaw, sipping chilled Beauty Lassi, and sharing iconic biriyani before heading home.',
+    description_bn:
+      'দিনের নীরব ঐতিহ্য পেরিয়ে সন্ধ্যায় পুরান ঢাকার প্রাণবন্ত আলোয় মিশে যাওয়া—রিকশায় চকবাজার-লালবাগের অলিগলি ঘোরা, ঠান্ডা বিউটি লাচ্ছি আর নাজিরাবাজারের বিরিয়ানি দিয়ে ট্যুরের জমজমাট সমাপ্তি।',
+    highlights_en: [
+      'Evening rickshaw trail around Lalbagh & Chawkbazar',
+      'Iconic Old Dhaka street food, lassi & biriyani dinner',
+      'Warm street lights & energetic city night vibe',
+    ],
+    highlights_bn: [
+      'লালবাগ ও চকবাজারের সন্ধ্যাবেলার রিকশা ভ্রমণ',
+      'বিউটি লাচ্ছি, কাবাব ও নাজিরাবাজারের বিরিয়ানি ডিনার',
+      'রাতের আলোকিত শহরের প্রাণবন্ত আড্ডা',
+    ],
+    media_mode: 'gallery',
+    fallback_image_url: '/images/explore-puran-dhaka.svg',
+    photos: [
+      {
+        url: '/images/explore-puran-dhaka.svg',
+        caption_en: 'Puran Dhaka evening lights & food lanes (placeholder — add photos/video)',
+        caption_bn: 'সন্ধ্যার পুরান ঢাকা ও খাবারের অলিগলি (অ্যাডমিন থেকে ছবি/ভিডিও যোগ করুন)',
+      },
+    ],
+    youtube_url: '',
+    lat: 23.7165,
+    lng: 90.4018,
+    location_label_en: 'Lalbagh, Chawkbazar & Nazirabazar, Puran Dhaka',
+    location_label_bn: 'লালবাগ, চকবাজার ও নাজিরাবাজার, পুরান ঢাকা',
+  },
+];
 
 export const DEFAULT_TOUR_SETTINGS: TourSettings = {
   id: 1,
@@ -36,6 +188,7 @@ export const DEFAULT_TOUR_SETTINGS: TourSettings = {
   ambient_sound_enabled: true,
   hero_video_url: '',
   hero_fallback_image_url: '/images/panam-hero.svg',
+  explore_destinations: DEFAULT_EXPLORE_DESTINATIONS,
   updated_at: new Date().toISOString(),
 };
 
