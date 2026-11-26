@@ -40,6 +40,11 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (!cachedClient || cachedToken !== token) {
     cachedToken = token;
     cachedClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
       global: {
         headers: token ? { 'x-tour-session': token } : {},
       },
