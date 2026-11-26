@@ -82,7 +82,18 @@ async function sha256Hex(text: string): Promise<string> {
 function loadDevDb(): FullTourState {
   try {
     const raw = localStorage.getItem(DEV_STORE_KEY);
-    if (raw) return JSON.parse(raw) as FullTourState;
+    if (raw) {
+      const parsed = JSON.parse(raw) as FullTourState;
+      if (parsed.settings) {
+        if (parsed.settings.website_name_bn === '১ দিনের সস্তায় ট্যুর') {
+          parsed.settings.website_name_bn = DEFAULT_TOUR_SETTINGS.website_name_bn;
+        }
+        if (parsed.settings.website_name_en === 'Ek Diner Sostay Tour') {
+          parsed.settings.website_name_en = DEFAULT_TOUR_SETTINGS.website_name_en;
+        }
+      }
+      return parsed;
+    }
   } catch {
     // fallback to seed
   }

@@ -82,6 +82,15 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('tour_theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const name =
+      lang === 'bn'
+        ? state?.settings.website_name_bn || gateStatus?.website_name_bn || 'সস্তায় ১ দিনের ট্যুর'
+        : state?.settings.website_name_en || gateStatus?.website_name_en || 'Sostay 1 diner tour';
+    document.title =
+      lang === 'bn' ? `${name} — সোনারগাঁও ও পুরান ঢাকা` : `${name} — Sonargaon & Puran Dhaka`;
+  }, [lang, state?.settings.website_name_bn, state?.settings.website_name_en, gateStatus]);
+
   const toggleTheme = useCallback(() => {
     soundEngine.playTick();
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));

@@ -168,8 +168,8 @@ export const DEFAULT_EXPLORE_DESTINATIONS: ExploreDestination[] = [
 
 export const DEFAULT_TOUR_SETTINGS: TourSettings = {
   id: 1,
-  website_name_bn: '১ দিনের সস্তায় ট্যুর',
-  website_name_en: 'Ek Diner Sostay Tour',
+  website_name_bn: 'সস্তায় ১ দিনের ট্যুর',
+  website_name_en: 'Sostay 1 diner tour',
   tagline_bn: 'প্ল্যান ক্যানসেল না হইলেই হয়।',
   tagline_en: "As long as the plan doesn't get cancelled.",
   tour_date: '2026-11-28T06:30:00+06:00',

@@ -65,21 +65,30 @@ export const AccessGate: React.FC = () => {
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md rounded-3xl border border-white/15 bg-[#FAF7F0] dark:bg-[#131F19] text-[#1A241E] dark:text-[#F2EFE7] p-6 sm:p-8 shadow-2xl">
           <div className="mb-6">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#14452F]/10 dark:bg-[#D4AF37]/15 px-3 py-1 text-xs font-semibold text-[#14452F] dark:text-[#D4AF37]">
-              <Lock className="w-3.5 h-3.5" />
-              {lang === 'bn' ? 'শুধুমাত্র ৬ বন্ধুর জন্য' : 'Private 6-Friend Portal'}
-            </span>
-            <h1 className="font-editorial mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-[#14452F] dark:text-[#FAF7F0]">
-              {lang === 'bn'
-                ? gateStatus?.website_name_bn || '১ দিনের সস্তায় ট্যুর'
-                : gateStatus?.website_name_en || 'Ek Diner Sostay Tour'}
-            </h1>
-            <p className="mt-1.5 text-sm font-medium text-[#C45C3E] dark:text-[#E58A6E]">
+            <div className="flex items-center gap-3.5">
+              <img
+                src="/images/logo.jpg"
+                alt="সস্তায় ১ দিনের ট্যুর — Sostay 1 diner tour"
+                className="w-16 h-16 rounded-full object-contain shrink-0 ring-2 ring-[#D4AF37]/45 shadow-md"
+              />
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#14452F]/10 dark:bg-[#D4AF37]/15 px-3 py-1 text-xs font-semibold text-[#14452F] dark:text-[#D4AF37]">
+                  <Lock className="w-3.5 h-3.5" />
+                  {lang === 'bn' ? 'শুধুমাত্র ৬ বন্ধুর জন্য' : 'Private 6-Friend Portal'}
+                </span>
+                <h1 className="font-editorial mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-[#14452F] dark:text-[#FAF7F0]">
+                  {lang === 'bn'
+                    ? gateStatus?.website_name_bn || 'সস্তায় ১ দিনের ট্যুর'
+                    : gateStatus?.website_name_en || 'Sostay 1 diner tour'}
+                </h1>
+              </div>
+            </div>
+            <p className="mt-2.5 text-sm font-medium text-[#C45C3E] dark:text-[#E58A6E]">
               {lang === 'bn'
                 ? gateStatus?.tagline_bn || 'প্ল্যান ক্যানসেল না হইলেই হয়।'
                 : gateStatus?.tagline_en || "As long as the plan doesn't get cancelled."}
             </p>
-            <p className="mt-3 text-sm text-[#4A5850] dark:text-[#B9C4BC]">
+            <p className="mt-2 text-sm text-[#4A5850] dark:text-[#B9C4BC]">
               {t.gate.subtitle}
             </p>
           </div>

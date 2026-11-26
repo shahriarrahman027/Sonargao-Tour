@@ -9,10 +9,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon.svg', 'images/*.svg', 'images/*.jpg'],
+      includeAssets: ['images/*.svg', 'images/*.jpg'],
       manifest: {
-        name: '১ দিনের সস্তায় ট্যুর',
-        short_name: 'সস্তায় ট্যুর',
+        name: 'সস্তায় ১ দিনের ট্যুর — Sostay 1 diner tour',
+        short_name: 'সস্তায় ১ দিনের ট্যুর',
         description: 'প্ল্যান ক্যানসেল না হইলেই হয় — Private tour journal, itinerary & finance tracker.',
         theme_color: '#14452F',
         background_color: '#FAF7F0',
@@ -21,9 +21,9 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/icons/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: '/images/logo.jpg',
+            sizes: '512x512',
+            type: 'image/jpeg',
             purpose: 'any maskable',
           },
         ],
