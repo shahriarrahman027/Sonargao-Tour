@@ -701,6 +701,18 @@ export const FinanceDashboard: React.FC = () => {
               </span>
             </div>
             {detailExpense.description && <p className="text-sm">{detailExpense.description}</p>}
+            {detailExpense.receipt_url && (
+              <div>
+                <h5 className="text-xs font-bold uppercase tracking-wider text-[#5C6A62] mb-1.5">
+                  {lang === 'bn' ? 'সংযুক্ত রসিদ' : 'Attached Receipt'}
+                </h5>
+                <img
+                  src={detailExpense.receipt_url}
+                  alt="Expense receipt"
+                  className="max-h-48 rounded-2xl border border-black/10 object-contain"
+                />
+              </div>
+            )}
             <div>
               <h5 className="text-xs font-bold uppercase tracking-wider text-[#5C6A62] mb-2">
                 {lang === 'bn' ? 'সদস্যভিত্তিক বণ্টন' : 'Member Allocations'}
@@ -741,8 +753,65 @@ export const FinanceDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Void / Reverse Expense Modal */}
+      {voidingExpense && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
+          onClick={() => setVoidingExpense(null)}
+        >
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await tourApi.voidExpenseWithAudit(voidingExpense.id, voidReason);
+              await refreshState();
+              showToast(lang === 'bn' ? 'খরচ অডিটসহ বাতিল হয়েছে' : 'Expense voided with audit log');
+              setVoidingExpense(null);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-3xl bg-[#FAF7F0] dark:bg-[#131F19] p-6 shadow-2xl space-y-4"
+          >
+            <h4 className="font-editorial text-lg font-bold text-[#C45C3E]">
+              {lang === 'bn' ? 'খরচ বাতিল / রিভার্স করুন' : 'Void / Reverse Expense'}
+            </h4>
+            <p className="text-xs text-[#4A5850] dark:text-[#B9C4BC]">
+              {lang === 'bn'
+                ? `ঐতিহাসিক রেকর্ড মুছে ফেলা হবে না—শুধুমাত্র "${voidingExpense.title}" (${formatBDT(voidingExpense.total_amount, lang)}) অডিট লগসহ রিভার্সড হিসেবে চিহ্নিত হবে।`
+                : `History is never silently deleted. "${voidingExpense.title}" (${formatBDT(voidingExpense.total_amount, lang)}) will be marked voided with an audit entry.`}
+            </p>
+            <input
+              type="text"
+              required
+              value={voidReason}
+              onChange={(e) => setVoidReason(e.target.value)}
+              placeholder={lang === 'bn' ? 'বাতিলের কারণ লিখুন...' : 'Reason for voiding (required)...'}
+              className="w-full rounded-xl border border-[#C45C3E]/40 bg-white dark:bg-[#0D1511] px-3.5 py-2.5 text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setVoidingExpense(null)} className="px-4 py-2 text-xs">
+                {translations[lang].common.cancel}
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-[#C45C3E] text-white px-4 py-2 text-xs font-bold cursor-pointer"
+              >
+                {lang === 'bn' ? 'নিশ্চিত করুন' : 'Confirm Void'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Modals */}
-      <ContributionModal open={contribModalOpen} onClose={() => setContribModalOpen(false)} />
+      {contribModalOpen && (
+        <ContributionModal
+          open={contribModalOpen}
+          correctingContribution={correctingContrib}
+          onClose={() => {
+            setContribModalOpen(false);
+            setCorrectingContrib(null);
+          }}
+        />
+      )}
       {expenseModalOpen && (
         <ExpenseFormModal
           open={expenseModalOpen}
