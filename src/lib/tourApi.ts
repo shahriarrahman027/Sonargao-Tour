@@ -4,6 +4,7 @@ import {
   DEFAULT_CHECKLIST,
   DEFAULT_CONTRIBUTIONS,
   DEFAULT_EXPENSES,
+  DEFAULT_EXPLORE_DESTINATIONS,
   DEFAULT_FUN_EVENTS,
   DEFAULT_ITINERARY,
   DEFAULT_MEMBERS,
@@ -428,8 +429,25 @@ export const tourApi = {
       votes: votes.filter((v) => v.poll_id === p.id),
     }));
 
+    const rawSettings = (settingsRes.data as TourSettings) || DEFAULT_TOUR_SETTINGS;
+    let exploreFallback = rawSettings.explore_destinations;
+    if (!exploreFallback) {
+      try {
+        const localExplore = localStorage.getItem('ek_diner_tour_explore_destinations_v1');
+        if (localExplore) exploreFallback = JSON.parse(localExplore);
+      } catch {
+        // ignore
+      }
+    }
+
     const state: FullTourState = {
-      settings: (settingsRes.data as TourSettings) || DEFAULT_TOUR_SETTINGS,
+      settings: {
+        ...rawSettings,
+        explore_destinations:
+          exploreFallback && exploreFallback.length === 4
+            ? exploreFallback
+            : DEFAULT_EXPLORE_DESTINATIONS,
+      },
       members: (membersRes.data as Member[]) || [],
       contributions: ((contribRes.data || []) as Contribution[]).map((c) => ({
         ...c,
@@ -825,7 +843,23 @@ export const tourApi = {
       return;
     }
     const { error } = await sb.from('tour_settings').update(patch).eq('id', 1);
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Graceful fallback if 004_explore_destinations.sql migration has not been run on remote DB yet
+      if (patch.explore_destinations && error.message.includes('explore_destinations')) {
+        localStorage.setItem(
+          'ek_diner_tour_explore_destinations_v1',
+          JSON.stringify(patch.explore_destinations),
+        );
+        return;
+      }
+      throw new Error(error.message);
+    }
+    if (patch.explore_destinations) {
+      localStorage.setItem(
+        'ek_diner_tour_explore_destinations_v1',
+        JSON.stringify(patch.explore_destinations),
+      );
+    }
   },
 
   async updateGroupPasscode(requirePasscode: boolean, newPasscode?: string): Promise<void> {

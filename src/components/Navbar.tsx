@@ -5,6 +5,7 @@ import {
   Compass,
   FileBarChart,
   Home,
+  Landmark,
   Lock,
   LogOut,
   Moon,
@@ -24,6 +25,7 @@ import { translations } from '../lib/i18n';
 
 export type NavTab =
   | 'home'
+  | 'explore'
   | 'journey'
   | 'crew'
   | 'money'
@@ -60,6 +62,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
 
   const navItems: { id: NavTab; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: t.nav.home, icon: <Home className="w-4 h-4" /> },
+    { id: 'explore', label: t.nav.explore, icon: <Landmark className="w-4 h-4" /> },
     { id: 'journey', label: t.nav.journey, icon: <Compass className="w-4 h-4" /> },
     { id: 'money', label: t.nav.money, icon: <Wallet className="w-4 h-4" /> },
     { id: 'crew', label: t.nav.crew, icon: <Users className="w-4 h-4" /> },
