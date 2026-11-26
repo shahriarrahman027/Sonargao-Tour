@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_EXPLORE_DESTINATIONS } from '../../data/defaultSeed';
-import { extractYouTubeId, getYouTubeThumbnailUrl, toYouTubeEmbedUrl } from '../media';
+import { extractYouTubeId, getYouTubeThumbnailUrl, toYouTubeBackgroundEmbedUrl, toYouTubeEmbedUrl } from '../media';
 import { tourApi } from '../tourApi';
 
 function installStorageMock() {
@@ -48,6 +48,15 @@ describe("Places We'll Explore — Sequence, Media Parsing & Admin Persistence",
     expect(getYouTubeThumbnailUrl('https://youtu.be/dQw4w9WgXcQ')).toBe(
       'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
     );
+
+    const bgEmbed = toYouTubeBackgroundEmbedUrl('https://youtu.be/G5oeAwgew6k?si=EnBD6ttc1SEcLVmC');
+    expect(bgEmbed).toContain('youtube-nocookie.com/embed/G5oeAwgew6k');
+    expect(bgEmbed).toContain('autoplay=1');
+    expect(bgEmbed).toContain('mute=1');
+    expect(bgEmbed).toContain('loop=1');
+    expect(bgEmbed).toContain('playlist=G5oeAwgew6k');
+    expect(bgEmbed).toContain('controls=0');
+    expect(bgEmbed).toContain('playsinline=1');
   });
 
   it('allows Admin to configure destination media and blocks non-admin members', async () => {

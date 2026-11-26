@@ -186,7 +186,7 @@ export const DEFAULT_TOUR_SETTINGS: TourSettings = {
     'Report at C&B, Savar by 6:30 AM on Saturday, 28 Nov 2026. Bring cash for the group pouch & personal meals.',
   require_group_passcode: false,
   ambient_sound_enabled: true,
-  hero_video_url: '',
+  hero_video_url: 'https://youtu.be/G5oeAwgew6k?si=EnBD6ttc1SEcLVmC',
   hero_fallback_image_url: '/images/panam-hero.svg',
   explore_destinations: DEFAULT_EXPLORE_DESTINATIONS,
   updated_at: new Date().toISOString(),

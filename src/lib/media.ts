@@ -37,6 +37,17 @@ export function toYouTubeEmbedUrl(rawUrl: string): string | null {
   return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=0&controls=1`;
 }
 
+/**
+ * Privacy-enhanced background video embed URL for the homepage hero:
+ * autoplay=1, mute=1, loop=1 + playlist=<id> (required by YouTube for single-video looping),
+ * hidden controls, and inline mobile playback.
+ */
+export function toYouTubeBackgroundEmbedUrl(rawUrl: string): string | null {
+  const id = extractYouTubeId(rawUrl);
+  if (!id) return null;
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3`;
+}
+
 export function getYouTubeThumbnailUrl(rawUrl: string): string | null {
   const id = extractYouTubeId(rawUrl);
   if (!id) return null;
