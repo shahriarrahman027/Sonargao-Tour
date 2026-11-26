@@ -159,18 +159,19 @@ export class GlobalMusicManager {
       audio.pause();
     }
 
+    if (this.userPaused) {
+      // Defer loading audio source until user resumes to avoid unnecessary network requests
+      this.isPlaying = false;
+      audio.volume = TARGET_VOLUME;
+      this.notify();
+      return;
+    }
+
     // Load new track if URL changed
     if (this.loadedSrc !== config.url) {
       audio.src = config.url;
       this.loadedSrc = config.url;
       audio.load();
-    }
-
-    if (this.userPaused) {
-      this.isPlaying = false;
-      audio.volume = TARGET_VOLUME;
-      this.notify();
-      return;
     }
 
     await this.attemptPlayback(myTransition, true);

@@ -22,6 +22,10 @@ const TourShell: React.FC = () => {
 
   useEffect(() => {
     if (loading) return;
+    if (!session && activeTab !== 'home') {
+      setActiveTab('home');
+      return;
+    }
     syncMusicForRoute(activeTab);
   }, [loading, session, activeTab, syncMusicForRoute]);
 
