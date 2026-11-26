@@ -904,9 +904,10 @@ export const tourApi = {
       saveDevDb(state);
       return;
     }
+    const memberId = await resolveSupabaseMemberId();
     const { error } = await sb
       .from('tour_progress')
-      .update({ ...patch, updated_at: new Date().toISOString() })
+      .update({ ...patch, updated_by: memberId, updated_at: new Date().toISOString() })
       .eq('id', 1);
     if (error) throw new Error(error.message);
   },
@@ -922,7 +923,8 @@ export const tourApi = {
       saveDevDb(state);
       return;
     }
-    const { error } = await sb.from('checklist_items').insert(item);
+    const memberId = await resolveSupabaseMemberId();
+    const { error } = await sb.from('checklist_items').insert({ ...item, created_by: memberId });
     if (error) throw new Error(error.message);
   },
 
@@ -994,6 +996,7 @@ export const tourApi = {
       return;
     }
 
+    const memberId = await resolveSupabaseMemberId();
     const { data: poll, error } = await sb
       .from('polls')
       .insert({
@@ -1003,6 +1006,7 @@ export const tourApi = {
         description_en: input.description_en,
         deadline: input.deadline || null,
         allow_multiple: input.allow_multiple,
+        created_by: memberId,
       })
       .select()
       .single();
@@ -1026,10 +1030,10 @@ export const tourApi = {
       const poll = state.polls.find((p) => p.id === pollId);
       if (!poll) throw new Error('Poll not found');
       if (poll.is_closed) throw new Error('Poll is closed');
+      const already = poll.votes.some((v) => v.member_id === memberId && v.option_id === optionId);
       if (!allowMultiple) {
         poll.votes = poll.votes.filter((v) => v.member_id !== memberId);
       }
-      const already = poll.votes.some((v) => v.member_id === memberId && v.option_id === optionId);
       if (already) {
         poll.votes = poll.votes.filter((v) => !(v.member_id === memberId && v.option_id === optionId));
       } else {
@@ -1045,10 +1049,35 @@ export const tourApi = {
       return;
     }
 
+    const { data: existing } = await sb
+      .from('votes')
+      .select('id')
+      .eq('poll_id', pollId)
+      .eq('option_id', optionId)
+      .eq('member_id', memberId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await sb.from('votes').delete().eq('id', existing.id);
+      if (error) throw new Error(error.message);
+      return;
+    }
     if (!allowMultiple) {
       await sb.from('votes').delete().eq('poll_id', pollId).eq('member_id', memberId);
     }
     const { error } = await sb.from('votes').insert({ poll_id: pollId, option_id: optionId, member_id: memberId });
+    if (error) throw new Error(error.message);
+  },
+
+  async deletePoll(pollId: string): Promise<void> {
+    const sb = getSupabaseClient();
+    if (!sb) {
+      const { state } = requireDevAdmin();
+      state.polls = state.polls.filter((p) => p.id !== pollId);
+      saveDevDb(state);
+      return;
+    }
+    const { error } = await sb.from('polls').delete().eq('id', pollId);
     if (error) throw new Error(error.message);
   },
 
@@ -1081,7 +1110,9 @@ export const tourApi = {
       saveDevDb(state);
       return;
     }
+    const memberId = await resolveSupabaseMemberId();
     const { error } = await sb.from('shared_notes').insert({
+      author_id: memberId,
       title: input.title,
       content: input.content,
       is_pinned: Boolean(input.is_pinned),
