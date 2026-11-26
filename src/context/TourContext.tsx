@@ -1,0 +1,243 @@
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { computeFinancialSummary, type FinancialSummary } from '../lib/accounting';
+import { loadOfflineSnapshot } from '../lib/offlineCache';
+import { soundEngine } from '../lib/sound';
+import { tourApi, type FullTourState } from '../lib/tourApi';
+import type { GateStatus, Language, SessionInfo, ThemeMode } from '../types/tour';
+
+interface TourContextValue {
+  lang: Language;
+  setLang: (l: Language) => void;
+  toggleLang: () => void;
+  theme: ThemeMode;
+  toggleTheme: () => void;
+  soundMuted: boolean;
+  toggleSoundMute: () => void;
+  musicPlaying: boolean;
+  toggleMusic: () => void;
+  isOnline: boolean;
+  isSupabaseMode: boolean;
+  gateStatus: GateStatus | null;
+  session: SessionInfo | null;
+  loading: boolean;
+  state: FullTourState | null;
+  finance: FinancialSummary | null;
+  refreshState: () => Promise<void>;
+  login: (studentId: string, groupPasscode?: string) => Promise<void>;
+  elevateAdmin: (password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  toast: string | null;
+  showToast: (msg: string) => void;
+}
+
+const TourContext = createContext<TourContextValue | null>(null);
+
+export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [lang, setLangState] = useState<Language>(() => {
+    const saved = localStorage.getItem('tour_lang');
+    return saved === 'en' ? 'en' : 'bn';
+  });
+
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('tour_theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
+
+  const [soundMuted, setSoundMuted] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  );
+  const [gateStatus, setGateStatus] = useState<GateStatus | null>(null);
+  const [session, setSession] = useState<SessionInfo | null>(null);
+  const [state, setState] = useState<FullTourState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => {
+      setToast((curr) => (curr === msg ? null : curr));
+    }, 3600);
+  }, []);
+
+  const setLang = useCallback((l: Language) => {
+    setLangState(l);
+    localStorage.setItem('tour_lang', l);
+    document.documentElement.lang = l;
+  }, []);
+
+  const toggleLang = useCallback(() => {
+    soundEngine.playTick();
+    setLang(lang === 'bn' ? 'en' : 'bn');
+  }, [lang, setLang]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('tour_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    soundEngine.playTick();
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
+
+  const toggleSoundMute = useCallback(() => {
+    const next = !soundMuted;
+    setSoundMuted(next);
+    soundEngine.setMuted(next);
+    if (next) setMusicPlaying(false);
+  }, [soundMuted]);
+
+  const toggleMusic = useCallback(() => {
+    const playing = soundEngine.toggleAmbientMusic();
+    setMusicPlaying(playing);
+    if (playing) setSoundMuted(false);
+  }, []);
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+
+  const refreshState = useCallback(async () => {
+    try {
+      const full = await tourApi.fetchFullState();
+      setState(full);
+    } catch (err) {
+      const cached = loadOfflineSnapshot();
+      if (cached) {
+        setState((prev) =>
+          prev
+            ? { ...prev, ...cached }
+            : {
+                settings: cached.settings,
+                members: cached.members,
+                itinerary: cached.itinerary,
+                checklist: cached.checklist,
+                progress: cached.progress,
+                contributions: [],
+                expenses: [],
+                polls: [],
+                notes: [],
+                photos: [],
+                badges: [],
+                funEvents: [],
+                activityLog: [],
+              },
+        );
+      } else {
+        showToast(err instanceof Error ? err.message : 'Failed to load tour data');
+      }
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [gate, restored] = await Promise.all([
+          tourApi.getGateStatus(),
+          tourApi.restoreSession(),
+        ]);
+        if (!active) return;
+        setGateStatus(gate);
+        if (restored) {
+          setSession(restored);
+          await refreshState();
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [refreshState]);
+
+  useEffect(() => {
+    if (!session) return;
+    return tourApi.subscribeToRealtime(() => {
+      void refreshState();
+    });
+  }, [session, refreshState]);
+
+  const login = useCallback(
+    async (studentId: string, groupPasscode?: string) => {
+      const sess = await tourApi.loginWithStudentId(studentId, groupPasscode);
+      setSession(sess);
+      await refreshState();
+      soundEngine.playCelebration();
+    },
+    [refreshState],
+  );
+
+  const elevateAdmin = useCallback(
+    async (password: string) => {
+      await tourApi.elevateAdmin(password);
+      setSession((prev) => (prev ? { ...prev, isAdmin: true } : prev));
+      await refreshState();
+      soundEngine.playCoinChime();
+    },
+    [refreshState],
+  );
+
+  const logout = useCallback(async () => {
+    await tourApi.logout();
+    setSession(null);
+    setState(null);
+  }, []);
+
+  const finance = useMemo(() => {
+    if (!state) return null;
+    return computeFinancialSummary(
+      state.members,
+      state.contributions,
+      state.expenses,
+      state.settings,
+    );
+  }, [state]);
+
+  return (
+    <TourContext.Provider
+      value={{
+        lang,
+        setLang,
+        toggleLang,
+        theme,
+        toggleTheme,
+        soundMuted,
+        toggleSoundMute,
+        musicPlaying,
+        toggleMusic,
+        isOnline,
+        isSupabaseMode: tourApi.isSupabaseMode(),
+        gateStatus,
+        session,
+        loading,
+        state,
+        finance,
+        refreshState,
+        login,
+        elevateAdmin,
+        logout,
+        toast,
+        showToast,
+      }}
+    >
+      {children}
+    </TourContext.Provider>
+  );
+};
+
+export function useTour(): TourContextValue {
+  const ctx = useContext(TourContext);
+  if (!ctx) throw new Error('useTour must be used inside TourProvider');
+  return ctx;
+}
