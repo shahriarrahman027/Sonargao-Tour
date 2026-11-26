@@ -12,6 +12,7 @@ import { HomepageSection } from './components/HomepageSection';
 import { JourneySection } from './components/JourneySection';
 import { Navbar, type NavTab } from './components/Navbar';
 import { PhotosSection } from './components/PhotosSection';
+import { PlacesExploreSection } from './components/PlacesExploreSection';
 import { SocialSection } from './components/SocialSection';
 
 const TourShell: React.FC = () => {
@@ -59,6 +60,7 @@ const TourShell: React.FC = () => {
 
       <main className="flex-1">
         {activeTab === 'home' && <HomepageSection onNavigate={navigate} />}
+        {activeTab === 'explore' && <PlacesExploreSection />}
         {activeTab === 'journey' && <JourneySection />}
         {activeTab === 'crew' && <CrewSection />}
         {activeTab === 'money' && <FinanceDashboard />}
