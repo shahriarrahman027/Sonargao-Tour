@@ -27,24 +27,27 @@ describe('End-to-End QA: Finance, Access Control, Audit & Workflows', () => {
 
   it('allows all 6 authorized student IDs individually (with space trimming) and rejects invalid IDs', async () => {
     const validCases = [
-      ['251-15-008', 'mahadi', 'member'],
-      [' 251-15-053 ', 'seam', 'member'],
-      ['251-15-554', 'ashik', 'member'],
-      ['251-15-871', 'safin', 'member'],
-      ['253-15-078', 'shoaib', 'member'],
-      ['  251-15-027  ', 'shahriar', 'admin'],
+      ['251-15-008', 'mahadi', 'Mahadi', 'member'],
+      [' 251-15-053 ', 'seam', 'Seam', 'member'],
+      ['251-15-554', 'ashik', 'Ashik', 'member'],
+      ['251-15-871', 'safin', 'Safin', 'member'],
+      ['251-15-078', 'shoaib', 'Shoaib', 'member'],
+      ['  251-15-027  ', 'shahriar', 'Shahriar', 'admin'],
     ] as const;
 
-    for (const [id, expectedSlug, expectedRole] of validCases) {
+    for (const [id, expectedSlug, expectedName, expectedRole] of validCases) {
       const sess = await tourApi.loginWithStudentId(id);
       expect(sess.member.slug).toBe(expectedSlug);
+      expect(sess.member.name_en).toBe(expectedName);
       expect(sess.member.role).toBe(expectedRole);
       expect(sess.isAdmin).toBe(false);
+      const restored = await tourApi.restoreSession();
+      expect(restored?.member.slug).toBe(expectedSlug);
       await tourApi.logout();
     }
 
     await expect(tourApi.loginWithStudentId('FAKE-999')).rejects.toThrow(/Unauthorized/i);
-    await expect(tourApi.loginWithStudentId('251-15-999')).rejects.toThrow(/Unauthorized/i);
+    await expect(tourApi.loginWithStudentId('253-15-078')).rejects.toThrow(/Unauthorized/i);
     await expect(tourApi.loginWithStudentId('DIU-101')).rejects.toThrow(/Unauthorized/i);
   });
 

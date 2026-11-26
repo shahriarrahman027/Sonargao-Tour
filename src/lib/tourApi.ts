@@ -290,7 +290,7 @@ export const tourApi = {
         }
       }
       const member = db.members.find((m) => m.id === memberId);
-      if (!member) throw new Error('Member record missing.');
+      if (!member || !member.is_active) throw new Error('Unauthorized DIU Student ID.');
       clearDevRateLimit('member_login');
       const session: SessionInfo = {
         token: crypto.randomUUID(),

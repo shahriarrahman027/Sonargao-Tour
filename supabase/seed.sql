@@ -57,7 +57,7 @@ SELECT id,
     WHEN 'seam'     THEN '3fe1e31c3827f81fd99b6e5c428494d683abbccce6941a2b2544ab266c0f73d9'
     WHEN 'ashik'    THEN '22deb4a93613035405e24b8d6201f35a7eddf71007093f8f74788a77eb3c50ac'
     WHEN 'safin'    THEN '9864275f74de5e46a989b217338458c744a4b9ef0d9b7a65a7aa4a1d4d323e14'
-    WHEN 'shoaib'   THEN '0bf8a8c59070defd4263129863a6a575331dc5c882e6d8783ae791df79fcf8e8'
+    WHEN 'shoaib'   THEN '6280be88b9e8df70bf253dc0a5fbb4bdd0c5185879be6d5f792eb5102e9793e6'
   END
 FROM inserted_members
 ON CONFLICT (member_id) DO UPDATE SET student_id_hash = EXCLUDED.student_id_hash;
