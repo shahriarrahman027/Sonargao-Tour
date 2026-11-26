@@ -1,5 +1,6 @@
 export type Language = 'bn' | 'en';
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ResolvedTheme = 'light' | 'dark';
 
 export type MemberRole = 'admin' | 'member';
 

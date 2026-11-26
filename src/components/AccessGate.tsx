@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
-import { BadgeCheck, IdCard, Moon, ShieldCheck, Sparkles, Sun, Ticket, Users } from 'lucide-react';
+import { BadgeCheck, IdCard, ShieldCheck, Sparkles, Ticket, Users } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { translations } from '../lib/i18n';
 import { GlobalMusicControl } from './GlobalMusicControl';
+import { ThemeSelector } from './ThemeSelector';
 
 export const AccessGate: React.FC = () => {
-  const { lang, toggleLang, theme, toggleTheme, gateStatus, login, isSupabaseMode } = useTour();
+  const { lang, toggleLang, gateStatus, login, isSupabaseMode } = useTour();
   const t = translations[lang];
   const [studentId, setStudentId] = useState('');
   const [passcode, setPasscode] = useState('');
@@ -51,26 +52,19 @@ export const AccessGate: React.FC = () => {
 
       {/* Top utility bar */}
       <header className="relative z-10 flex items-center justify-between px-4 sm:px-6 py-4 max-w-5xl w-full mx-auto gap-2">
-        <div className="flex items-center gap-2 text-[11px] sm:text-xs tracking-wider uppercase text-[#D4AF37] font-semibold">
+        <div className="flex items-center gap-2 min-w-0 text-[11px] sm:text-xs tracking-wider uppercase text-[#D4AF37] font-semibold">
           <Users className="w-4 h-4 shrink-0" />
           <span className="truncate">{t.gate.badge}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <GlobalMusicControl variant="gate" />
+          <ThemeSelector variant="gate" />
           <button
             type="button"
             onClick={toggleLang}
             className="rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20 transition cursor-pointer"
           >
             {lang === 'bn' ? 'EN' : 'বাংলা'}
-          </button>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="rounded-xl border border-white/20 bg-white/10 p-2 hover:bg-white/20 transition cursor-pointer"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-[#D4AF37]" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
       </header>

@@ -5,14 +5,25 @@ import { computeFinancialSummary, type FinancialSummary } from '../lib/accountin
 import { musicManager, type MusicSnapshot } from '../lib/musicManager';
 import { loadOfflineSnapshot } from '../lib/offlineCache';
 import { soundEngine } from '../lib/sound';
+import {
+  applyThemeToDocument,
+  getNextThemeMode,
+  getStoredTheme,
+  getSystemPrefersDark,
+  resolveTheme,
+  saveStoredTheme,
+  subscribeToSystemTheme,
+} from '../lib/theme';
 import { tourApi, type FullTourState } from '../lib/tourApi';
-import type { GateStatus, Language, SessionInfo, ThemeMode } from '../types/tour';
+import type { GateStatus, Language, ResolvedTheme, SessionInfo, ThemeMode } from '../types/tour';
 
 interface TourContextValue {
   lang: Language;
   setLang: (l: Language) => void;
   toggleLang: () => void;
   theme: ThemeMode;
+  resolvedTheme: ResolvedTheme;
+  setTheme: (mode: ThemeMode) => void;
   toggleTheme: () => void;
   soundMuted: boolean;
   toggleSoundMute: () => void;
@@ -43,10 +54,12 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved === 'en' ? 'en' : 'bn';
   });
 
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('tour_theme');
-    return saved === 'dark' ? 'dark' : 'light';
-  });
+  const [theme, setThemeState] = useState<ThemeMode>(() => getStoredTheme());
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => getSystemPrefersDark());
+  const resolvedTheme = useMemo(
+    () => resolveTheme(theme, systemPrefersDark),
+    [theme, systemPrefersDark],
+  );
 
   const [soundMuted, setSoundMuted] = useState(false);
   const [musicState, setMusicState] = useState<MusicSnapshot>(() => musicManager.getSnapshot());
@@ -78,9 +91,14 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [lang, setLang]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('tour_theme', theme);
-  }, [theme]);
+    setSystemPrefersDark(getSystemPrefersDark());
+    return subscribeToSystemTheme(setSystemPrefersDark);
+  }, []);
+
+  useEffect(() => {
+    applyThemeToDocument(resolvedTheme);
+    saveStoredTheme(theme);
+  }, [theme, resolvedTheme]);
 
   useEffect(() => {
     const name =
@@ -91,9 +109,14 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lang === 'bn' ? `${name} — সোনারগাঁও ও পুরান ঢাকা` : `${name} — Sonargaon & Puran Dhaka`;
   }, [lang, state?.settings.website_name_bn, state?.settings.website_name_en, gateStatus]);
 
+  const setTheme = useCallback((next: ThemeMode) => {
+    soundEngine.playTick();
+    setThemeState(next);
+  }, []);
+
   const toggleTheme = useCallback(() => {
     soundEngine.playTick();
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setThemeState((prev) => getNextThemeMode(prev));
   }, []);
 
   const toggleSoundMute = useCallback(() => {
@@ -262,6 +285,8 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLang,
         toggleLang,
         theme,
+        resolvedTheme,
+        setTheme,
         toggleTheme,
         soundMuted,
         toggleSoundMute,

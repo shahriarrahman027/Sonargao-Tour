@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#14452F" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('tour_theme');
+          var mode = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+          var prefersDark =
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = mode === 'dark' || (mode === 'system' && prefersDark);
+          document.documentElement.classList.toggle('dark', isDark);
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="সস্তায় ১ দিনের ট্যুর (Sostay 1 diner tour) — প্ল্যান ক্যানসেল না হইলেই হয়। Savar to Sonargaon & Puran Dhaka private group travel headquarters."

@@ -10,9 +10,7 @@ import {
   Lock,
   LogOut,
   Menu,
-  Moon,
   Shield,
-  Sun,
   Users,
   Vote,
   Volume2,
@@ -24,6 +22,7 @@ import {
 import { useTour } from '../context/TourContext';
 import { translations } from '../lib/i18n';
 import { GlobalMusicControl } from './GlobalMusicControl';
+import { ThemeSelector } from './ThemeSelector';
 
 export type NavTab =
   | 'home'
@@ -47,8 +46,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
   const {
     lang,
     toggleLang,
-    theme,
-    toggleTheme,
     soundMuted,
     toggleSoundMute,
     isOnline,
@@ -136,7 +133,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
           <button
             type="button"
             onClick={() => handleNavClick('home')}
-            className="flex items-center gap-2.5 text-left min-w-0 shrink-0 cursor-pointer group"
+            className="flex items-center gap-2 sm:gap-2.5 text-left min-w-0 shrink cursor-pointer group"
           >
             <img
               src="/images/logo.jpg"
@@ -144,7 +141,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-contain shrink-0 ring-1 ring-[#D4AF37]/45 shadow-xs group-hover:scale-105 transition-transform"
             />
             <div className="min-w-0 leading-tight">
-              <div className="font-editorial text-sm sm:text-base font-bold text-[#14452F] dark:text-[#FAF7F0] whitespace-nowrap truncate max-w-[165px] sm:max-w-none">
+              <div className="font-editorial text-sm sm:text-base font-bold text-[#14452F] dark:text-[#FAF7F0] whitespace-nowrap truncate max-w-[125px] sm:max-w-none">
                 {brandTitle}
               </div>
               {session && (
@@ -228,7 +225,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
           <div className="flex items-center gap-1.5 shrink-0">
             <GlobalMusicControl />
 
-            {/* Desktop Utility Controls */}
+            {/* Desktop Sound Toggle */}
             <div className="hidden sm:flex items-center gap-1.5">
               <button
                 type="button"
@@ -243,21 +240,10 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
                   <Volume2 className="w-4 h-4" />
                 )}
               </button>
-
-              <button
-                type="button"
-                onClick={toggleTheme}
-                title={theme === 'dark' ? t.common.lightMode : t.common.darkMode}
-                aria-label={theme === 'dark' ? t.common.lightMode : t.common.darkMode}
-                className="p-2 rounded-xl border border-[#14452F]/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 text-[#D4AF37]" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
-              </button>
             </div>
+
+            {/* Theme Selector (Light / Dark / System) — always accessible in header on mobile & desktop */}
+            <ThemeSelector />
 
             <button
               type="button"
@@ -351,19 +337,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
                     <Volume2 className="w-3.5 h-3.5" />
                   )}
                   <span>{soundMuted ? t.common.soundOff : t.common.soundOn}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#14452F]/15 dark:border-white/15 px-3 py-1.5 text-xs font-semibold cursor-pointer"
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  ) : (
-                    <Moon className="w-3.5 h-3.5" />
-                  )}
-                  <span>{theme === 'dark' ? t.common.lightMode : t.common.darkMode}</span>
                 </button>
               </div>
 
