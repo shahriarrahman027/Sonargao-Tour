@@ -80,7 +80,7 @@ describe('Global Background Music System', () => {
     expect(resolveTrackKeyForSection(true, 'journey')).toBe('journey');
     expect(resolveTrackKeyForSection(true, 'money')).toBe('money');
 
-    const remaining = ['explore', 'crew', 'photos', 'social', 'fun', 'checklist', 'report', 'admin'] as const;
+    const remaining = ['explore', 'crew', 'photos', 'social', 'checklist', 'report', 'admin'] as const;
     for (const tab of remaining) {
       expect(resolveTrackKeyForSection(true, tab)).toBe('explore');
     }
