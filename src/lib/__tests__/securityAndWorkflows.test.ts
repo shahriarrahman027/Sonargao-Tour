@@ -31,7 +31,7 @@ describe('End-to-End QA: Finance, Access Control, Audit & Workflows', () => {
       [' 251-15-053 ', 'seam', 'Seam', 'member'],
       ['251-15-554', 'ashik', 'Ashik', 'member'],
       ['251-15-871', 'safin', 'Safin', 'member'],
-      ['251-15-078', 'shoaib', 'Shoaib', 'member'],
+      ['253-15-078', 'shoaib', 'Shoaib', 'member'],
       ['  251-15-027  ', 'shahriar', 'Shahriar', 'admin'],
     ] as const;
 
@@ -47,7 +47,7 @@ describe('End-to-End QA: Finance, Access Control, Audit & Workflows', () => {
     }
 
     await expect(tourApi.loginWithStudentId('FAKE-999')).rejects.toThrow(/Unauthorized/i);
-    await expect(tourApi.loginWithStudentId('253-15-078')).rejects.toThrow(/Unauthorized/i);
+    await expect(tourApi.loginWithStudentId('251-15-078')).rejects.toThrow(/Unauthorized/i);
     await expect(tourApi.loginWithStudentId('DIU-101')).rejects.toThrow(/Unauthorized/i);
   });
 
