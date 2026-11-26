@@ -637,48 +637,6 @@ export const DEFAULT_ACTIVITY_LOG: ActivityLogEntry[] = [
   },
 ];
 
-export const FUN_CHALLENGES = [
-  {
-    bn: 'পানাম নগরের সবচেয়ে পুরোনো দরজার সামনে একটা সিরিয়াস মুভি পোস্টার পোজ দাও!',
-    en: 'Strike a dramatic movie-poster pose in front of the oldest Panam Nagar archway!',
-  },
-  {
-    bn: 'পরবর্তী চা স্টপে পুরো গ্রুপের জন্য চা অর্ডার ও পরিবেশন করতে হবে!',
-    en: 'Order and serve tea for the whole crew at the next stop!',
-  },
-  {
-    bn: 'অন্য ৫ জন বন্ধুর একটি করে ক্যান্ডিড ছবি তুলে গ্যালারিতে আপলোড করো।',
-    en: 'Snap one candid photo of each of the other 5 friends and upload to Memories.',
-  },
-  {
-    bn: 'পুরান ঢাকার রাস্তায় দাঁড়িয়ে আমাদের ট্যুরের ট্যাগলাইন আবৃত্তি করে শোনাও!',
-    en: 'Recite our tour tagline dramatically on a Puran Dhaka lane!',
-  },
-  {
-    bn: 'বাসে বসে পরবর্তী ৪৫ মিনিটের গান/গল্পের সঞ্চালনা করো।',
-    en: 'Host a 45-minute bus ride trivia or storytelling session.',
-  },
-  {
-    bn: 'দোকানদারের সাথে ভদ্রভাবে দামাদামি করে কমপক্ষে ৳২০ বাঁচিয়ে দেখাও!',
-    en: 'Politely negotiate a snack or rickshaw fare and save at least ৳20 for the fund!',
-  },
-];
-
-export const SNACK_PROMPTS = [
-  {
-    bn: 'রাস্তার ঝালমুড়ি ও চা স্পন্সর করার পালা!',
-    en: 'Nominated for the next roadside jhalmuri & tea round!',
-  },
-  {
-    bn: 'পুরান ঢাকার বিউটি লাচ্ছি বা শরবত আনার দায়িত্ব!',
-    en: 'Snack runner for Puran Dhaka lassi / cold drinks!',
-  },
-  {
-    bn: 'সকালের বিস্কুট ও পানির বোতল ম্যানেজ করার দায়িত্ব!',
-    en: 'Picked to grab water bottles & biscuits for the bus!',
-  },
-];
-
 /**
  * Local development credential hashes only (used strictly when Supabase is not configured).
  * Format: DIU-101 .. DIU-106 for local dev testing; never used in Supabase production mode.

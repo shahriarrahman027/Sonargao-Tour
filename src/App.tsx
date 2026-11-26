@@ -7,7 +7,6 @@ import { ChecklistSection } from './components/ChecklistSection';
 import { CrewSection } from './components/CrewSection';
 import { FinalReportSection } from './components/FinalReportSection';
 import { FinanceDashboard } from './components/FinanceDashboard';
-import { FunZoneSection } from './components/FunZoneSection';
 import { HomepageSection } from './components/HomepageSection';
 import { JourneySection } from './components/JourneySection';
 import { Navbar, type NavTab } from './components/Navbar';
@@ -86,7 +85,6 @@ const TourShell: React.FC = () => {
         {activeTab === 'money' && <FinanceDashboard />}
         {activeTab === 'photos' && <PhotosSection />}
         {activeTab === 'social' && <SocialSection />}
-        {activeTab === 'fun' && <FunZoneSection />}
         {activeTab === 'checklist' && <ChecklistSection />}
         {activeTab === 'report' && <FinalReportSection />}
         {activeTab === 'admin' && <AdminDashboard />}

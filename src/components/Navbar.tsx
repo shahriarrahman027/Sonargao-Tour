@@ -12,7 +12,6 @@ import {
   Menu,
   Moon,
   Shield,
-  Sparkles,
   Sun,
   Users,
   Vote,
@@ -34,7 +33,6 @@ export type NavTab =
   | 'money'
   | 'photos'
   | 'social'
-  | 'fun'
   | 'checklist'
   | 'report'
   | 'admin';
@@ -89,7 +87,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
     { id: 'photos', label: t.nav.photos, icon: <Camera className="w-3.5 h-3.5 shrink-0" />, hideOnXl: true },
     { id: 'checklist', label: t.nav.checklist, icon: <CheckSquare className="w-3.5 h-3.5 shrink-0" />, hideOnXl: true },
     { id: 'social', label: t.nav.social, icon: <Vote className="w-3.5 h-3.5 shrink-0" /> },
-    { id: 'fun', label: t.nav.fun, icon: <Sparkles className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'report', label: t.nav.report, icon: <FileBarChart className="w-3.5 h-3.5 shrink-0" /> },
   ];
 
