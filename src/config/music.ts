@@ -8,8 +8,8 @@ export interface MusicTrackConfig {
   labelBn: string;
   labelEn: string;
   /**
-   * Paste your direct Cloudflare R2 public audio URL here (or set VITE_MUSIC_*_URL in .env).
-   * Example: 'https://pub-xxxxxxxxxxxxxxxx.r2.dev/Home.mp3'
+   * Audio source URL (defaults to local static files in public/audio/).
+   * Can optionally be overridden via VITE_MUSIC_*_URL in .env.
    */
   url: string;
 }
@@ -19,48 +19,48 @@ const env = (import.meta.env ?? {}) as Record<string, string | undefined>;
 export const MUSIC_TRACKS: Record<MusicTrackKey, MusicTrackConfig> = {
   login: {
     key: 'login',
-    fileName: 'log in.mp3',
+    fileName: 'login.mp3',
     labelBn: 'প্রবেশ সংগীত',
     labelEn: 'Gate Theme',
-    url: env.VITE_MUSIC_LOGIN_URL?.trim() || '[PASTE LOGIN AUDIO URL]',
+    url: env.VITE_MUSIC_LOGIN_URL?.trim() || '/audio/login.mp3',
   },
   home: {
     key: 'home',
-    fileName: 'Home.mp3',
+    fileName: 'home.mp3',
     labelBn: 'হোমপেজ থিম',
     labelEn: 'Homepage Theme',
-    url: env.VITE_MUSIC_HOME_URL?.trim() || '[PASTE HOME AUDIO URL]',
+    url: env.VITE_MUSIC_HOME_URL?.trim() || '/audio/home.mp3',
   },
   journey: {
     key: 'journey',
-    fileName: 'Journey.mp3',
+    fileName: 'journey.mp3',
     labelBn: 'ভ্রমণপথ থিম',
     labelEn: 'Journey Theme',
-    url: env.VITE_MUSIC_JOURNEY_URL?.trim() || '[PASTE JOURNEY AUDIO URL]',
+    url: env.VITE_MUSIC_JOURNEY_URL?.trim() || '/audio/journey.mp3',
   },
   money: {
     key: 'money',
-    fileName: 'Money.mp3',
+    fileName: 'money.mp3',
     labelBn: 'হিসাব থিম',
     labelEn: 'Finance Theme',
-    url: env.VITE_MUSIC_MONEY_URL?.trim() || '[PASTE MONEY AUDIO URL]',
+    url: env.VITE_MUSIC_MONEY_URL?.trim() || '/audio/money.mp3',
   },
   explore: {
     key: 'explore',
-    fileName: 'Explore.mp3',
+    fileName: 'explore.mp3',
     labelBn: 'ভ্রমণ ও আড্ডা থিম',
     labelEn: 'Explore Theme',
-    url: env.VITE_MUSIC_EXPLORE_URL?.trim() || '[PASTE EXPLORE AUDIO URL]',
+    url: env.VITE_MUSIC_EXPLORE_URL?.trim() || '/audio/explore.mp3',
   },
 };
 
 /**
  * Resolves which background music track belongs to the current view.
- * - Login screen -> 'login' (log in.mp3)
- * - Home -> 'home' (Home.mp3)
- * - Journey -> 'journey' (Journey.mp3)
- * - Money / Finance -> 'money' (Money.mp3)
- * - All remaining pages -> 'explore' (Explore.mp3)
+ * - Login screen -> 'login' (/audio/login.mp3)
+ * - Home -> 'home' (/audio/home.mp3)
+ * - Journey -> 'journey' (/audio/journey.mp3)
+ * - Money / Finance -> 'money' (/audio/money.mp3)
+ * - All remaining pages -> 'explore' (/audio/explore.mp3)
  */
 export function resolveTrackKeyForSection(
   isAuthenticated: boolean,
