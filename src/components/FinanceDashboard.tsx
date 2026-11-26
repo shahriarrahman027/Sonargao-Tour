@@ -536,14 +536,23 @@ export const FinanceDashboard: React.FC = () => {
                 <div
                   key={exp.id}
                   onClick={() => setDetailExpense(exp)}
-                  className="rounded-2xl border border-[#14452F]/10 dark:border-white/10 p-4 hover:bg-[#FAF7F0] dark:hover:bg-white/5 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className={`rounded-2xl border border-[#14452F]/10 dark:border-white/10 p-4 hover:bg-[#FAF7F0] dark:hover:bg-white/5 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                    exp.voided_by_correction ? 'opacity-60' : ''
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2.5 rounded-xl bg-[#C45C3E]/12 text-[#C45C3E]">
                       <ArrowUpRight className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-bold text-sm">{exp.title}</div>
+                      <div className={`font-bold text-sm flex items-center gap-2 ${exp.voided_by_correction ? 'line-through' : ''}`}>
+                        <span>{exp.title}</span>
+                        {exp.voided_by_correction && (
+                          <span className="no-underline inline-block rounded-md bg-[#C45C3E]/15 text-[#C45C3E] px-2 py-0.5 text-[10px] font-bold">
+                            {lang === 'bn' ? 'বাতিল / রিভার্সড' : 'Voided'}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-[#5C6A62] dark:text-[#9AA89F] mt-0.5 flex flex-wrap gap-2">
                         <span>{CATEGORY_LABELS[exp.category][lang]}</span>
                         <span>•</span>
@@ -569,22 +578,39 @@ export const FinanceDashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 self-end sm:self-center">
-                    <div className="font-editorial text-lg font-bold text-[#C45C3E]">
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <div className={`font-editorial text-lg font-bold text-[#C45C3E] ${exp.voided_by_correction ? 'line-through' : ''}`}>
                       {formatBDT(exp.total_amount, lang)}
                     </div>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setEditingExpense(exp);
-                          setExpenseModalOpen(true);
-                        }}
-                        className="p-2 rounded-xl border border-[#14452F]/15 hover:bg-black/5 cursor-pointer"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
+                    {isAdmin && !exp.voided_by_correction && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={!isOnline}
+                          title={lang === 'bn' ? 'সম্পাদনা' : 'Edit Expense'}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setEditingExpense(exp);
+                            setExpenseModalOpen(true);
+                          }}
+                          className="p-2 rounded-xl border border-[#14452F]/15 hover:bg-black/5 disabled:opacity-45 cursor-pointer"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!isOnline}
+                          title={lang === 'bn' ? 'অডিটসহ বাতিল/সংশোধন' : 'Void / Reverse (Audited)'}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setVoidReason('');
+                            setVoidingExpense(exp);
+                          }}
+                          className="p-2 rounded-xl border border-[#C45C3E]/30 text-[#C45C3E] hover:bg-[#C45C3E]/10 disabled:opacity-45 cursor-pointer"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Award, KeyRound, Save, Settings, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Award, KeyRound, Save, Settings, ShieldCheck, Users } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { tourApi } from '../lib/tourApi';
 
@@ -15,6 +15,13 @@ export const AdminDashboard: React.FC = () => {
   const [badgeTitleBn, setBadgeTitleBn] = useState('');
   const [badgeTitleEn, setBadgeTitleEn] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (state?.settings) {
+      setForm(state.settings);
+      setRequirePasscode(Boolean(state.settings.require_group_passcode));
+    }
+  }, [state?.settings]);
 
   if (!state || !session?.isAdmin || !form) {
     return (
@@ -279,6 +286,57 @@ export const AdminDashboard: React.FC = () => {
             {lang === 'bn' ? 'ব্যাজ প্রদান করুন' : 'Award Badge'}
           </button>
         </form>
+      </div>
+
+      {/* Quick Member Roster & Active Status */}
+      <div className="rounded-3xl bg-white dark:bg-[#131F19] border border-[#14452F]/10 dark:border-white/10 p-6 space-y-4">
+        <div className="flex items-center gap-2 font-editorial text-lg font-bold">
+          <Users className="w-5 h-5 text-[#14452F] dark:text-[#D4AF37]" />
+          <span>{lang === 'bn' ? 'সদস্য ব্যবস্থাপনা' : 'Member Roster & Status'}</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          {state.members.map((m) => (
+            <div
+              key={m.id}
+              className="rounded-2xl border border-black/10 dark:border-white/10 p-3.5 flex items-center justify-between gap-2"
+            >
+              <div>
+                <div className="font-bold">{lang === 'bn' ? m.name_bn : m.name_en}</div>
+                <div className="text-[11px] text-[#5C6A62]">
+                  {lang === 'bn' ? m.nickname_bn : m.nickname_en} • {m.role}
+                </div>
+              </div>
+              {m.role !== 'admin' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void tourApi
+                      .updateMember(m.id, { is_active: !m.is_active })
+                      .then(refreshState)
+                      .then(() =>
+                        showToast(
+                          lang === 'bn' ? 'সদস্য স্ট্যাটাস আপডেট হয়েছে' : 'Member status updated',
+                        ),
+                      )
+                  }
+                  className={`rounded-lg px-2.5 py-1 font-semibold cursor-pointer ${
+                    m.is_active
+                      ? 'bg-[#14452F]/12 text-[#14452F] dark:text-[#A9E0BE]'
+                      : 'bg-[#C45C3E]/15 text-[#C45C3E]'
+                  }`}
+                >
+                  {m.is_active
+                    ? lang === 'bn'
+                      ? 'সক্রিয়'
+                      : 'Active'
+                    : lang === 'bn'
+                      ? 'নিষ্ক্রিয়'
+                      : 'Disabled'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
