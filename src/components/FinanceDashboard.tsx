@@ -9,6 +9,7 @@ import {
   History,
   Info,
   Plus,
+  RotateCcw,
   Search,
   Wallet,
 } from 'lucide-react';
@@ -29,23 +30,27 @@ import {
 import { useTour } from '../context/TourContext';
 import { EXPENSE_CATEGORIES } from '../lib/accounting';
 import { CATEGORY_LABELS, formatBDT, formatDateTime, translations } from '../lib/i18n';
-import type { Expense, ExpenseCategory } from '../types/tour';
+import { tourApi } from '../lib/tourApi';
+import type { Contribution, Expense, ExpenseCategory } from '../types/tour';
 import { ContributionModal } from './ContributionModal';
 import { ExpenseFormModal } from './ExpenseFormModal';
 
 const CHART_COLORS = ['#14452F', '#C45C3E', '#C89F3C', '#2E7D5B', '#7B5E42', '#4D7C8A', '#8E6C88'];
 
 export const FinanceDashboard: React.FC = () => {
-  const { lang, state, finance, session, isOnline } = useTour();
+  const { lang, state, finance, session, isOnline, refreshState, showToast } = useTour();
   const t = translations[lang].money;
 
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<'ALL' | ExpenseCategory>('ALL');
   const [ledgerTab, setLedgerTab] = useState<'all' | 'expenses' | 'contributions' | 'audit'>('all');
   const [contribModalOpen, setContribModalOpen] = useState(false);
+  const [correctingContrib, setCorrectingContrib] = useState<Contribution | null>(null);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null);
+  const [voidingExpense, setVoidingExpense] = useState<Expense | null>(null);
+  const [voidReason, setVoidReason] = useState('');
 
   const members = state?.members || [];
   const memberName = (id?: string | null) => {
@@ -623,8 +628,29 @@ export const FinanceDashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="font-editorial text-base font-bold text-[#14452F] dark:text-[#A9E0BE]">
-                    +{formatBDT(c.amount, lang)}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`font-editorial text-base font-bold ${
+                        c.amount >= 0 ? 'text-[#14452F] dark:text-[#A9E0BE]' : 'text-[#C45C3E]'
+                      }`}
+                    >
+                      {c.amount >= 0 ? '+' : ''}
+                      {formatBDT(c.amount, lang)}
+                    </div>
+                    {isAdmin && !c.is_correction && (
+                      <button
+                        type="button"
+                        disabled={!isOnline}
+                        title={lang === 'bn' ? 'সংশোধন এন্ট্রি যোগ করুন' : 'Create correction/offset entry'}
+                        onClick={() => {
+                          setCorrectingContrib(c);
+                          setContribModalOpen(true);
+                        }}
+                        className="p-1.5 rounded-xl border border-[#14452F]/15 hover:bg-black/5 disabled:opacity-45 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

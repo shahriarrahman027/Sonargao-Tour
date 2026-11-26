@@ -5,22 +5,35 @@ import { useTour } from '../context/TourContext';
 import { soundEngine } from '../lib/sound';
 import { tourApi } from '../lib/tourApi';
 
+import type { Contribution } from '../types/tour';
+
 interface Props {
   open: boolean;
+  correctingContribution?: Contribution | null;
   onClose: () => void;
 }
 
-export const ContributionModal: React.FC<Props> = ({ open, onClose }) => {
+export const ContributionModal: React.FC<Props> = ({ open, correctingContribution, onClose }) => {
   const { lang, state, refreshState, showToast } = useTour();
   const members = state?.members || [];
   const defaultTarget = state?.settings.target_contribution_per_person ?? 1000;
 
-  const [memberId, setMemberId] = useState(members[0]?.id || '');
-  const [amount, setAmount] = useState(String(defaultTarget));
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Adjustment'>('Cash');
-  const [notes, setNotes] = useState('');
-  const [referenceCode, setReferenceCode] = useState('');
-  const [isCorrection, setIsCorrection] = useState(false);
+  const [memberId, setMemberId] = useState(
+    correctingContribution?.member_id || members[0]?.id || '',
+  );
+  const [amount, setAmount] = useState(
+    correctingContribution ? String(-correctingContribution.amount) : String(defaultTarget),
+  );
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Adjustment'>(
+    correctingContribution ? 'Adjustment' : 'Cash',
+  );
+  const [notes, setNotes] = useState(
+    correctingContribution
+      ? `${lang === 'bn' ? 'সংশোধন:' : 'Correction for:'} ${correctingContribution.notes || correctingContribution.amount}`
+      : '',
+  );
+  const [referenceCode, setReferenceCode] = useState(correctingContribution?.reference_code || '');
+  const [isCorrection, setIsCorrection] = useState(Boolean(correctingContribution));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +51,7 @@ export const ContributionModal: React.FC<Props> = ({ open, onClose }) => {
         notes,
         reference_code: referenceCode,
         is_correction: isCorrection,
+        corrects_id: correctingContribution?.id || null,
       });
       soundEngine.playCoinChime();
       void confetti({ particleCount: 40, spread: 55, origin: { y: 0.7 } });

@@ -41,6 +41,8 @@ export const ExpenseFormModal: React.FC<Props> = ({ open, editingExpense, onClos
     editingExpense?.allocation_mode || 'equal',
   );
   const [description, setDescription] = useState(editingExpense?.description || '');
+  const [receiptUrl, setReceiptUrl] = useState(editingExpense?.receipt_url || '');
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [editReason, setEditReason] = useState('');
   const [isReimbursed, setIsReimbursed] = useState(Boolean(editingExpense?.is_reimbursed));
 
@@ -205,6 +207,7 @@ export const ExpenseFormModal: React.FC<Props> = ({ open, editingExpense, onClos
           items: cleanItems,
           payer_member_id: fundingSource === 'personal_payer' ? payerMemberId : null,
           description: description.trim(),
+          receipt_url: receiptUrl.trim() || null,
           is_reimbursed: isReimbursed,
         });
       } else {
@@ -218,6 +221,7 @@ export const ExpenseFormModal: React.FC<Props> = ({ open, editingExpense, onClos
           items: cleanItems,
           payer_member_id: fundingSource === 'personal_payer' ? payerMemberId : null,
           description: description.trim(),
+          receipt_url: receiptUrl.trim() || null,
         });
       }
 
@@ -625,18 +629,50 @@ export const ExpenseFormModal: React.FC<Props> = ({ open, editingExpense, onClos
             </div>
           )}
 
-          {/* Description & Edit Reason */}
-          <div>
-            <label className="block text-xs font-semibold mb-1">
-              {lang === 'bn' ? 'নোট / বিবরণ' : 'Notes / Description'}
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={lang === 'bn' ? 'ঐচ্ছিক নোট...' : 'Optional notes...'}
-              className="w-full rounded-xl border border-[#14452F]/20 dark:border-white/15 bg-white dark:bg-[#0D1511] px-3.5 py-2 text-sm"
-            />
+          {/* Description, Receipt & Edit Reason */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold mb-1">
+                {lang === 'bn' ? 'নোট / বিবরণ' : 'Notes / Description'}
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={lang === 'bn' ? 'ঐচ্ছিক নোট...' : 'Optional notes...'}
+                className="w-full rounded-xl border border-[#14452F]/20 dark:border-white/15 bg-white dark:bg-[#0D1511] px-3.5 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1">
+                {lang === 'bn' ? 'রসিদ / বিলের ছবি (ঐচ্ছিক)' : 'Receipt Image (Optional)'}
+              </label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploadingReceipt}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploadingReceipt(true);
+                  setError(null);
+                  try {
+                    const url = await tourApi.uploadReceipt(file);
+                    setReceiptUrl(url);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Receipt upload failed');
+                  } finally {
+                    setUploadingReceipt(false);
+                  }
+                }}
+                className="w-full rounded-xl border border-dashed border-[#14452F]/25 dark:border-white/20 px-3 py-1.5 text-xs"
+              />
+              {receiptUrl && (
+                <span className="text-[11px] text-[#14452F] dark:text-[#A9E0BE] font-semibold">
+                  {lang === 'bn' ? '✓ রসিদ সংযুক্ত হয়েছে' : '✓ Receipt attached'}
+                </span>
+              )}
+            </div>
           </div>
 
           {editingExpense && (

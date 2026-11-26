@@ -168,14 +168,28 @@ export const SocialSection: React.FC = () => {
                     )}
                   </div>
                   {session.isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => void tourApi.togglePollClosed(poll.id, !poll.is_closed).then(refreshState)}
-                      className="p-1.5 rounded-lg border border-black/10 dark:border-white/10 text-xs cursor-pointer"
-                      title={poll.is_closed ? 'Reopen poll' : 'Close poll'}
-                    >
-                      {poll.is_closed ? <Lock className="w-3.5 h-3.5 text-[#C45C3E]" /> : <Unlock className="w-3.5 h-3.5" />}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void tourApi.togglePollClosed(poll.id, !poll.is_closed).then(refreshState)}
+                        className="p-1.5 rounded-lg border border-black/10 dark:border-white/10 text-xs cursor-pointer"
+                        title={poll.is_closed ? 'Reopen poll' : 'Close poll'}
+                      >
+                        {poll.is_closed ? <Lock className="w-3.5 h-3.5 text-[#C45C3E]" /> : <Unlock className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(lang === 'bn' ? 'এই পোলটি মুছে ফেলবেন?' : 'Delete this poll?')) {
+                            void tourApi.deletePoll(poll.id).then(refreshState);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg border border-[#C45C3E]/30 text-[#C45C3E] text-xs cursor-pointer"
+                        title={lang === 'bn' ? 'পোল মুছুন' : 'Delete poll'}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
 

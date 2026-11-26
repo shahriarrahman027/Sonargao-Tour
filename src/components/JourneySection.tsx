@@ -186,6 +186,18 @@ export const JourneySection: React.FC = () => {
               className="rounded-xl bg-black/25 border border-white/20 px-3 py-2"
             />
             <input
+              value={progForm.current_activity_en}
+              onChange={(e) => setProgForm({ ...progForm, current_activity_en: e.target.value })}
+              placeholder="Activity (EN)"
+              className="rounded-xl bg-black/25 border border-white/20 px-3 py-2"
+            />
+            <input
+              value={progForm.next_destination_bn}
+              onChange={(e) => setProgForm({ ...progForm, next_destination_bn: e.target.value })}
+              placeholder="Next Destination (BN)"
+              className="rounded-xl bg-black/25 border border-white/20 px-3 py-2"
+            />
+            <input
               value={progForm.next_destination_en}
               onChange={(e) => setProgForm({ ...progForm, next_destination_en: e.target.value })}
               placeholder="Next Destination (EN)"
