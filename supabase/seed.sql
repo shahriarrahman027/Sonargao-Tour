@@ -48,19 +48,19 @@ WITH inserted_members AS (
   ON CONFLICT (slug) DO UPDATE SET name_en = EXCLUDED.name_en
   RETURNING id, slug
 )
--- Hash the 6 DIU Student IDs (REPLACE THESE PLACEHOLDERS WITH THE REAL 6 DIU IDs)
+-- Hash the 6 DIU Student IDs (SHA-256 hex hashes — no plaintext IDs stored)
 INSERT INTO public.member_credentials (member_id, student_id_hash)
 SELECT id,
   CASE slug
-    WHEN 'mahadi'   THEN encode(digest(upper('REPLACE_DIU_ID_1_MAHADI'), 'sha256'), 'hex')
-    WHEN 'shahriar' THEN encode(digest(upper('REPLACE_DIU_ID_2_SHAHRIAR'), 'sha256'), 'hex')
-    WHEN 'seam'     THEN encode(digest(upper('REPLACE_DIU_ID_3_SEAM'), 'sha256'), 'hex')
-    WHEN 'ashik'    THEN encode(digest(upper('REPLACE_DIU_ID_4_ASHIK'), 'sha256'), 'hex')
-    WHEN 'safin'    THEN encode(digest(upper('REPLACE_DIU_ID_5_SAFIN'), 'sha256'), 'hex')
-    WHEN 'shoaib'   THEN encode(digest(upper('REPLACE_DIU_ID_6_SHOAIB'), 'sha256'), 'hex')
+    WHEN 'mahadi'   THEN '14e55f7f6679a685abde05220969be8d6f384a9a813b7d9f6334cfbf02f3f82b'
+    WHEN 'shahriar' THEN 'eae102e7d6d2eb31e20ef3a8f0d8489f2d772f49632eb8bcc3b8427726726fa'
+    WHEN 'seam'     THEN '3fe1e31c3827f81fd99b6e5c428494d683abbccce6941a2b2544ab266c0f73d9'
+    WHEN 'ashik'    THEN '22deb4a93613035405e24b8d6201f35a7eddf71007093f8f74788a77eb3c50ac'
+    WHEN 'safin'    THEN '9864275f74de5e46a989b217338458c744a4b9ef0d9b7a65a7aa4a1d4d323e14'
+    WHEN 'shoaib'   THEN '0bf8a8c59070defd4263129863a6a575331dc5c882e6d8783ae791df79fcf8e8'
   END
 FROM inserted_members
-ON CONFLICT (member_id) DO NOTHING;
+ON CONFLICT (member_id) DO UPDATE SET student_id_hash = EXCLUDED.student_id_hash;
 
 -- Set Shahriar's Admin Password (REPLACE PASSWORD BEFORE RUNNING)
 INSERT INTO public.admin_credentials (member_id, password_hash)

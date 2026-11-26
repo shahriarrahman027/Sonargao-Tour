@@ -201,8 +201,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(sess);
       await refreshState();
       soundEngine.playCelebration();
+      showToast(
+        lang === 'bn'
+          ? `ওয়েলকাম ${sess.member.name_bn} মামা! ব্যাগ গুছান, ট্যুর অন!`
+          : `Welcome ${sess.member.name_en} mama! Crew ID verified — hop on the bus!`,
+      );
     },
-    [refreshState],
+    [refreshState, showToast, lang],
   );
 
   const elevateAdmin = useCallback(

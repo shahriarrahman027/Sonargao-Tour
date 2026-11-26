@@ -638,14 +638,26 @@ export const DEFAULT_ACTIVITY_LOG: ActivityLogEntry[] = [
 ];
 
 /**
- * Local development credential hashes only (used strictly when Supabase is not configured).
- * Format: DIU-101 .. DIU-106 for local dev testing; never used in Supabase production mode.
+ * Local development credential SHA-256 hashes only (used strictly when Supabase is not configured).
+ * Plaintext student IDs are never stored in frontend source code.
  */
-export const DEV_MEMBER_ID_MAP: Record<string, string> = {
-  'DIU-101': '11111111-1111-4111-8111-111111111101',
-  'DIU-102': '11111111-1111-4111-8111-111111111102',
-  'DIU-103': '11111111-1111-4111-8111-111111111103',
-  'DIU-104': '11111111-1111-4111-8111-111111111104',
-  'DIU-105': '11111111-1111-4111-8111-111111111105',
-  'DIU-106': '11111111-1111-4111-8111-111111111106',
+export const DEV_MEMBER_HASH_MAP: Record<string, string> = {
+  // Mahadi
+  '14e55f7f6679a685abde05220969be8d6f384a9a813b7d9f6334cfbf02f3f82b':
+    '11111111-1111-4111-8111-111111111101',
+  // Shahriar (Admin/Treasurer)
+  'eae102e7d6d2eb31e20ef3a8f0d8489f2d772f49632eb8bcc3b8427726726fa':
+    '11111111-1111-4111-8111-111111111102',
+  // Seam
+  '3fe1e31c3827f81fd99b6e5c428494d683abbccce6941a2b2544ab266c0f73d9':
+    '11111111-1111-4111-8111-111111111103',
+  // Ashik
+  '22deb4a93613035405e24b8d6201f35a7eddf71007093f8f74788a77eb3c50ac':
+    '11111111-1111-4111-8111-111111111104',
+  // Safin
+  '9864275f74de5e46a989b217338458c744a4b9ef0d9b7a65a7aa4a1d4d323e14':
+    '11111111-1111-4111-8111-111111111105',
+  // Shoaib
+  '0bf8a8c59070defd4263129863a6a575331dc5c882e6d8783ae791df79fcf8e8':
+    '11111111-1111-4111-8111-111111111106',
 };

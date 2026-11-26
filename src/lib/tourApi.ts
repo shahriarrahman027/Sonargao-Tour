@@ -13,7 +13,7 @@ import {
   DEFAULT_POLLS,
   DEFAULT_TOUR_PROGRESS,
   DEFAULT_TOUR_SETTINGS,
-  DEV_MEMBER_ID_MAP,
+  DEV_MEMBER_HASH_MAP,
 } from '../data/defaultSeed';
 import type {
   ActivityLogEntry,
@@ -273,7 +273,11 @@ export const tourApi = {
     if (!sb) {
       checkDevRateLimit('member_login', 8);
       const cleanId = studentId.replace(/\s+/g, '').toUpperCase();
-      const memberId = DEV_MEMBER_ID_MAP[cleanId];
+      if (cleanId.length < 5) {
+        throw new Error('Unauthorized DIU Student ID.');
+      }
+      const idHash = await sha256Hex(cleanId);
+      const memberId = DEV_MEMBER_HASH_MAP[idHash];
       if (!memberId) {
         throw new Error('Unauthorized DIU Student ID.');
       }
