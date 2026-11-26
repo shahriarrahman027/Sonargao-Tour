@@ -1,0 +1,76 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Hind Siliguri", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-display: "Noto Serif Bengali", "Fraunces", Georgia, serif;
+  --color-bengal-green: #14452F;
+  --color-bengal-sage: #DCE6DF;
+  --color-warm-ivory: #FAF7F0;
+  --color-terracotta: #C45C3E;
+  --color-muted-gold: #C89F3C;
+}
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Hind Siliguri", "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.font-editorial {
+  font-family: "Noto Serif Bengali", "Fraunces", Georgia, serif;
+}
+
+/* Editorial scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(20, 69, 47, 0.25);
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.25);
+}
+
+/* Subtle paper grain pattern */
+.paper-texture {
+  background-image: radial-gradient(rgba(20, 69, 47, 0.04) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+.dark .paper-texture {
+  background-image: radial-gradient(rgba(250, 247, 240, 0.03) 1px, transparent 0);
+}
+
+/* Print layout for Final Tour Report */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+}
