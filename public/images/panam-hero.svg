@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F2D20"/>
+      <stop offset="55%" stop-color="#1D4B36"/>
+      <stop offset="100%" stop-color="#C45C3E" stop-opacity="0.45"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1150 280) rotate(90) scale(220)">
+      <stop offset="0%" stop-color="#F2D184" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#F2D184" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <circle cx="1150" cy="280" r="220" fill="url(#sun)"/>
+  <!-- Distant Bengal Foliage -->
+  <path d="M0 640 Q220 560 440 620 T880 610 T1320 580 L1600 620 L1600 900 L0 900 Z" fill="#133827"/>
+  <!-- Panam Nagar Heritage Facade Silhouette -->
+  <g fill="#221B18" opacity="0.92">
+    <rect x="180" y="450" width="260" height="270" rx="4"/>
+    <rect x="460" y="420" width="310" height="300" rx="4"/>
+    <rect x="790" y="465" width="250" height="255" rx="4"/>
+    <rect x="1060" y="435" width="290" height="285" rx="4"/>
+  </g>
+  <!-- Terracotta Arches -->
+  <g fill="#9E4831" opacity="0.8">
+    <path d="M225 720V560C225 535 255 535 255 560V720Z"/>
+    <path d="M295 720V560C295 535 325 535 325 560V720Z"/>
+    <path d="M365 720V560C365 535 395 535 395 560V720Z"/>
+    <path d="M510 720V535C510 500 560 500 560 535V720Z"/>
+    <path d="M590 720V535C590 500 640 500 640 535V720Z"/>
+    <path d="M670 720V535C670 500 720 500 720 535V720Z"/>
+    <path d="M840 720V575C840 550 875 550 875 575V720Z"/>
+    <path d="M915 720V575C915 550 950 550 950 575V720Z"/>
+    <path d="M1115 720V545C1115 512 1165 512 1165 545V720Z"/>
+    <path d="M1200 720V545C1200 512 1250 512 1250 545V720Z"/>
+  </g>
+  <!-- Cobblestone Street Reflection -->
+  <rect y="715" width="1600" height="185" fill="#0B1E15"/>
+  <path d="M0 760 L1600 760" stroke="#D4AF37" stroke-opacity="0.2" stroke-width="2"/>
+</svg>
