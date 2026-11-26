@@ -53,7 +53,7 @@ RETURNS TABLE (session_id UUID, member_id UUID, is_admin BOOLEAN)
 LANGUAGE SQL
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
   SELECT s.id, s.member_id, s.is_admin
   FROM public.auth_sessions s
@@ -179,7 +179,7 @@ CREATE OR REPLACE FUNCTION public.verify_member_access(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_clean_id TEXT;
@@ -247,7 +247,7 @@ CREATE OR REPLACE FUNCTION public.elevate_admin_session(p_password TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_session_id UUID;
@@ -611,7 +611,7 @@ CREATE OR REPLACE FUNCTION public.update_group_passcode(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   IF NOT public.is_tour_admin() THEN
