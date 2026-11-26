@@ -75,32 +75,37 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
-  const primaryItems: { id: NavTab; label: string; icon: React.ReactNode }[] = [
+  const coreDesktopItems: { id: NavTab; label: string; icon: React.ReactNode; xlOnly?: boolean }[] = [
     { id: 'home', label: t.nav.home, icon: <Home className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'explore', label: t.nav.explore, icon: <Landmark className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'journey', label: t.nav.journey, icon: <Compass className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'money', label: t.nav.money, icon: <Wallet className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'crew', label: t.nav.crew, icon: <Users className="w-3.5 h-3.5 shrink-0" /> },
-    { id: 'photos', label: t.nav.photos, icon: <Camera className="w-3.5 h-3.5 shrink-0" /> },
-    { id: 'checklist', label: t.nav.checklist, icon: <CheckSquare className="w-3.5 h-3.5 shrink-0" /> },
+    { id: 'photos', label: t.nav.photos, icon: <Camera className="w-3.5 h-3.5 shrink-0" />, xlOnly: true },
+    { id: 'checklist', label: t.nav.checklist, icon: <CheckSquare className="w-3.5 h-3.5 shrink-0" />, xlOnly: true },
   ];
 
-  const secondaryItems: { id: NavTab; label: string; icon: React.ReactNode }[] = [
+  const moreItems: { id: NavTab; label: string; icon: React.ReactNode; hideOnXl?: boolean }[] = [
+    { id: 'photos', label: t.nav.photos, icon: <Camera className="w-3.5 h-3.5 shrink-0" />, hideOnXl: true },
+    { id: 'checklist', label: t.nav.checklist, icon: <CheckSquare className="w-3.5 h-3.5 shrink-0" />, hideOnXl: true },
     { id: 'social', label: t.nav.social, icon: <Vote className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'fun', label: t.nav.fun, icon: <Sparkles className="w-3.5 h-3.5 shrink-0" /> },
     { id: 'report', label: t.nav.report, icon: <FileBarChart className="w-3.5 h-3.5 shrink-0" /> },
   ];
 
   if (session?.isAdmin) {
-    secondaryItems.push({
+    moreItems.push({
       id: 'admin',
       label: t.nav.admin,
       icon: <Shield className="w-3.5 h-3.5 shrink-0" />,
     });
   }
 
-  const allItems = [...primaryItems, ...secondaryItems];
-  const isSecondaryActive = secondaryItems.some((item) => item.id === activeTab);
+  const allItems = [
+    ...coreDesktopItems,
+    ...moreItems.filter((item) => !item.hideOnXl),
+  ];
+  const isSecondaryActive = moreItems.some((item) => item.id === activeTab);
   const brandTitle =
     lang === 'bn'
       ? state?.settings.website_name_bn || 'সস্তায় ১ দিনের ট্যুর'
@@ -159,14 +164,14 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
             className="hidden lg:flex items-center justify-center flex-1 min-w-0"
           >
             <div className="inline-flex items-center gap-0.5 rounded-2xl border border-[#14452F]/10 dark:border-white/10 bg-[#14452F]/[0.04] dark:bg-white/[0.04] p-1">
-              {primaryItems.map((item) => {
+              {coreDesktopItems.map((item) => {
                 const active = activeTab === item.id;
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleNavClick(item.id)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                    className={`${item.xlOnly ? 'hidden xl:inline-flex' : 'inline-flex'} items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
                       active
                         ? 'bg-[#14452F] text-[#FAF7F0] dark:bg-[#D4AF37] dark:text-[#0E1612] shadow-xs'
                         : 'text-[#314037] dark:text-[#CFD9D2] hover:bg-[#14452F]/8 dark:hover:bg-white/8'
@@ -198,14 +203,14 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
 
                 {moreOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-[#14452F]/12 dark:border-white/12 bg-[#FAF7F0] dark:bg-[#131F19] shadow-xl p-1.5 space-y-0.5 z-50">
-                    {secondaryItems.map((item) => {
+                    {moreItems.map((item) => {
                       const active = activeTab === item.id;
                       return (
                         <button
                           key={item.id}
                           type="button"
                           onClick={() => handleNavClick(item.id)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                          className={`w-full ${item.hideOnXl ? 'flex xl:hidden' : 'flex'} items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
                             active
                               ? 'bg-[#14452F] text-[#FAF7F0] dark:bg-[#D4AF37] dark:text-[#0E1612]'
                               : 'text-[#314037] dark:text-[#CFD9D2] hover:bg-[#14452F]/8 dark:hover:bg-white/8'

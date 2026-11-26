@@ -77,7 +77,7 @@ export const GlobalMusicControl: React.FC<Props> = ({ variant = 'default' }) => 
             <span className="w-[2px] h-2.5 bg-current rounded-full animate-pulse" />
           </span>
           <Pause className="w-3.5 h-3.5" />
-          <span className="hidden md:inline max-w-[110px] truncate">{trackName}</span>
+          <span className="hidden 2xl:inline max-w-[100px] truncate">{trackName}</span>
         </>
       ) : needsTap ? (
         <>
