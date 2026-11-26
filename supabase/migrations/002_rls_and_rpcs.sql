@@ -630,6 +630,63 @@ BEGIN
 END;
 $$;
 
+-- Void / Reverse Expense with Mandatory Audit Trail (Never silently delete)
+CREATE OR REPLACE FUNCTION public.void_expense_with_audit(
+  p_expense_id UUID,
+  p_reason TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_admin_id UUID;
+  v_prev_exp public.expenses%ROWTYPE;
+BEGIN
+  IF NOT public.is_tour_admin() THEN
+    RAISE EXCEPTION 'Forbidden: Admin privileges required.';
+  END IF;
+  v_admin_id := public.current_member_id();
+
+  IF trim(COALESCE(p_reason, '')) = '' THEN
+    RAISE EXCEPTION 'Void reason is required for audit trail.';
+  END IF;
+
+  SELECT * INTO v_prev_exp FROM public.expenses WHERE id = p_expense_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Expense not found.';
+  END IF;
+  IF v_prev_exp.voided_by_correction THEN
+    RAISE EXCEPTION 'Expense is already voided.';
+  END IF;
+
+  INSERT INTO public.expense_edit_history (expense_id, edited_by, reason, previous_snapshot, new_snapshot)
+  VALUES (
+    p_expense_id,
+    v_admin_id,
+    'VOIDED: ' || p_reason,
+    to_jsonb(v_prev_exp),
+    jsonb_build_object('voided_by_correction', TRUE, 'reason', p_reason)
+  );
+
+  UPDATE public.expenses
+  SET voided_by_correction = TRUE,
+      updated_at = NOW()
+  WHERE id = p_expense_id;
+
+  INSERT INTO public.activity_log (
+    actor_member_id, action_type, entity_type, entity_id, summary_bn, summary_en, metadata
+  )
+  VALUES (
+    v_admin_id, 'expense_voided', 'expense', p_expense_id::TEXT,
+    format('খরচ বাতিল/সংশোধন: %s (%s)', v_prev_exp.title, p_reason),
+    format('Voided expense %s: %s', v_prev_exp.title, p_reason),
+    jsonb_build_object('reason', p_reason, 'amount', v_prev_exp.total_amount)
+  );
+END;
+$$;
+
 -- ----------------------------------------------------------------------------
 -- Row Level Security Policies
 -- ----------------------------------------------------------------------------
@@ -686,14 +743,32 @@ CREATE POLICY poll_options_insert ON public.poll_options FOR INSERT WITH CHECK (
 CREATE POLICY poll_options_admin ON public.poll_options FOR ALL USING (public.is_tour_admin()) WITH CHECK (public.is_tour_admin());
 
 CREATE POLICY votes_select ON public.votes FOR SELECT USING (public.is_tour_member());
-CREATE POLICY votes_member_insert ON public.votes FOR INSERT WITH CHECK (public.is_tour_member() AND member_id = public.current_member_id());
-CREATE POLICY votes_member_delete ON public.votes FOR DELETE USING (public.is_tour_admin() OR member_id = public.current_member_id());
+CREATE POLICY votes_member_insert ON public.votes FOR INSERT
+  WITH CHECK (
+    public.is_tour_member()
+    AND member_id = public.current_member_id()
+    AND EXISTS (SELECT 1 FROM public.polls p WHERE p.id = poll_id AND p.is_closed = FALSE)
+  );
+CREATE POLICY votes_member_delete ON public.votes FOR DELETE
+  USING (
+    public.is_tour_admin()
+    OR (
+      member_id = public.current_member_id()
+      AND EXISTS (SELECT 1 FROM public.polls p WHERE p.id = poll_id AND p.is_closed = FALSE)
+    )
+  );
 
 -- Shared Notes
 CREATE POLICY notes_select ON public.shared_notes FOR SELECT USING (public.is_tour_member());
-CREATE POLICY notes_member_insert ON public.shared_notes FOR INSERT WITH CHECK (public.is_tour_member() AND author_id = public.current_member_id());
+CREATE POLICY notes_member_insert ON public.shared_notes FOR INSERT
+  WITH CHECK (
+    public.is_tour_member()
+    AND author_id = public.current_member_id()
+    AND (is_pinned = FALSE OR public.is_tour_admin())
+  );
 CREATE POLICY notes_member_update ON public.shared_notes FOR UPDATE
-  USING (public.is_tour_admin() OR author_id = public.current_member_id());
+  USING (public.is_tour_admin() OR author_id = public.current_member_id())
+  WITH CHECK (public.is_tour_admin() OR (author_id = public.current_member_id() AND is_pinned = FALSE));
 CREATE POLICY notes_member_delete ON public.shared_notes FOR DELETE
   USING (public.is_tour_admin() OR author_id = public.current_member_id());
 

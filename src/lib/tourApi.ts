@@ -183,6 +183,19 @@ function assertOnlineForFinance() {
   }
 }
 
+let activeSupabaseMemberId: string | null = null;
+
+async function resolveSupabaseMemberId(): Promise<string> {
+  if (activeSupabaseMemberId) return activeSupabaseMemberId;
+  const sb = getSupabaseClient();
+  if (!sb) throw new Error('Supabase client unavailable');
+  const { data } = await sb.rpc('get_current_session_info');
+  const res = data as { member?: Member } | null;
+  if (!res?.member?.id) throw new Error('Unauthorized: Active member session required.');
+  activeSupabaseMemberId = res.member.id;
+  return activeSupabaseMemberId;
+}
+
 // ============================================================================
 // Unified API (Supabase Production + Local Dev Mode)
 // ============================================================================
@@ -234,6 +247,7 @@ export const tourApi = {
       return null;
     }
     const res = data as { is_admin: boolean; member: Member };
+    activeSupabaseMemberId = res.member.id;
     return {
       token,
       member: res.member,
@@ -280,6 +294,7 @@ export const tourApi = {
     if (error) throw new Error(error.message);
     const payload = data as { token: string; is_admin: boolean; expires_at: string; member: Member };
     setStoredSessionToken(payload.token);
+    activeSupabaseMemberId = payload.member.id;
     return {
       token: payload.token,
       member: payload.member,
@@ -320,6 +335,7 @@ export const tourApi = {
 
   async logout(): Promise<void> {
     const sb = getSupabaseClient();
+    activeSupabaseMemberId = null;
     if (!sb) {
       localStorage.removeItem(DEV_SESSION_KEY);
       return;
@@ -611,6 +627,7 @@ export const tourApi = {
     items?: ExpenseItem[];
     payer_member_id?: string | null;
     description?: string;
+    receipt_url?: string | null;
     is_reimbursed?: boolean;
   }): Promise<void> {
     assertOnlineForFinance();
@@ -657,6 +674,7 @@ export const tourApi = {
         allocation_mode: input.allocation_mode,
         payer_member_id: input.payer_member_id ?? prev.payer_member_id,
         description: input.description ?? prev.description,
+        receipt_url: input.receipt_url !== undefined ? input.receipt_url : prev.receipt_url,
         is_reimbursed: input.is_reimbursed ?? prev.is_reimbursed,
         updated_at: now,
         allocations: input.allocations.map((a) => ({
@@ -698,6 +716,86 @@ export const tourApi = {
       p_is_reimbursed: Boolean(input.is_reimbursed),
     });
     if (error) throw new Error(error.message);
+  },
+
+  async voidExpenseWithAudit(expenseId: string, reason: string): Promise<void> {
+    assertOnlineForFinance();
+    if (!reason.trim()) {
+      throw new Error('A reason is required to void/reverse an expense.');
+    }
+    const sb = getSupabaseClient();
+    if (!sb) {
+      const { state, session } = requireDevAdmin();
+      const idx = state.expenses.findIndex((e) => e.id === expenseId);
+      if (idx === -1) throw new Error('Expense not found.');
+      const prev = state.expenses[idx];
+      if (prev.voided_by_correction) throw new Error('Expense is already voided.');
+      const now = new Date().toISOString();
+      const editEntry = {
+        id: crypto.randomUUID(),
+        expense_id: prev.id,
+        edited_by: session.member.id,
+        reason: `VOIDED: ${reason.trim()}`,
+        previous_snapshot: { title: prev.title, total_amount: prev.total_amount },
+        new_snapshot: { voided_by_correction: true, reason: reason.trim() },
+        created_at: now,
+      };
+      state.expenses[idx] = {
+        ...prev,
+        voided_by_correction: true,
+        updated_at: now,
+        edit_history: [editEntry, ...(prev.edit_history || [])],
+      };
+      state.activityLog.unshift({
+        id: crypto.randomUUID(),
+        actor_member_id: session.member.id,
+        action_type: 'expense_voided',
+        entity_type: 'expense',
+        entity_id: prev.id,
+        summary_bn: `খরচ বাতিল/সংশোধন: ${prev.title} (${reason.trim()})`,
+        summary_en: `Voided expense ${prev.title}: ${reason.trim()}`,
+        metadata: { reason: reason.trim(), amount: prev.total_amount },
+        created_at: now,
+      });
+      saveDevDb(state);
+      return;
+    }
+
+    const { error } = await sb.rpc('void_expense_with_audit', {
+      p_expense_id: expenseId,
+      p_reason: reason.trim(),
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async uploadReceipt(file: File): Promise<string> {
+    assertOnlineForFinance();
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      throw new Error('Only JPG, PNG, or WebP receipt images are allowed.');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('Receipt image must be 5 MB or less.');
+    }
+    const sb = getSupabaseClient();
+    if (!sb) {
+      requireDevAdmin();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Failed to read receipt image'));
+        reader.readAsDataURL(file);
+      });
+    }
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('tour-receipts').upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (upErr) throw new Error(upErr.message);
+    const { data } = sb.storage.from('tour-receipts').getPublicUrl(path);
+    return data.publicUrl;
   },
 
   // --------------------------------------------------------------------------
