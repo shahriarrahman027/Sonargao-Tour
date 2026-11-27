@@ -9,7 +9,6 @@ import {
   Landmark,
   Lock,
   LogOut,
-  Menu,
   Shield,
   Users,
   Vote,
@@ -17,7 +16,6 @@ import {
   VolumeX,
   Wallet,
   WifiOff,
-  X,
 } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { translations } from '../lib/i18n';
@@ -34,7 +32,8 @@ export type NavTab =
   | 'social'
   | 'checklist'
   | 'report'
-  | 'admin';
+  | 'admin'
+  | 'more';
 
 interface Props {
   activeTab: NavTab;
@@ -57,7 +56,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
   const t = translations[lang];
 
   const [moreOpen, setMoreOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -95,10 +93,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
     });
   }
 
-  const allItems = [
-    ...coreDesktopItems,
-    ...moreItems.filter((item) => !item.hideOnXl),
-  ];
   const isSecondaryActive = moreItems.some((item) => item.id === activeTab);
   const brandTitle =
     lang === 'bn'
@@ -108,7 +102,6 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
   const handleNavClick = (id: NavTab) => {
     onSelectTab(id);
     setMoreOpen(false);
-    setMobileMenuOpen(false);
   };
 
   return (
@@ -286,87 +279,8 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
             >
               <LogOut className="w-4 h-4" />
             </button>
-
-            {/* Mobile/Tablet Drawer Toggle */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              aria-expanded={mobileMenuOpen}
-              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              className="lg:hidden p-2 rounded-xl border border-[#14452F]/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
           </div>
         </div>
-
-        {/* Clean Mobile / Tablet Menu Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-[#14452F]/10 dark:border-white/10 bg-[#FAF7F0] dark:bg-[#0E1612] px-4 py-4 space-y-4 shadow-xl">
-            <div className="grid grid-cols-2 gap-2">
-              {allItems.map((item) => {
-                const active = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleNavClick(item.id)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition cursor-pointer ${
-                      active
-                        ? 'bg-[#14452F] text-[#FAF7F0] dark:bg-[#D4AF37] dark:text-[#0E1612]'
-                        : 'bg-[#14452F]/[0.06] dark:bg-white/[0.06] text-[#314037] dark:text-[#CFD9D2]'
-                    }`}
-                  >
-                    {item.icon}
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="pt-3 border-t border-[#14452F]/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={toggleSoundMute}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#14452F]/15 dark:border-white/15 px-3 py-1.5 text-xs font-semibold cursor-pointer"
-                >
-                  {soundMuted ? (
-                    <VolumeX className="w-3.5 h-3.5 text-[#C45C3E]" />
-                  ) : (
-                    <Volume2 className="w-3.5 h-3.5" />
-                  )}
-                  <span>{soundMuted ? t.common.soundOff : t.common.soundOn}</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {session?.member.role === 'admin' && !session.isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      onOpenAdminModal();
-                    }}
-                    className="inline-flex items-center gap-1 rounded-xl bg-[#C89F3C]/20 border border-[#C89F3C]/40 px-3 py-1.5 text-xs font-semibold text-[#7A5B12] dark:text-[#F0D38C] cursor-pointer"
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>{t.common.unlockAdmin}</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => void logout()}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#C45C3E]/30 text-[#C45C3E] px-3 py-1.5 text-xs font-semibold cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>{t.common.logout}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </header>
     </div>
   );

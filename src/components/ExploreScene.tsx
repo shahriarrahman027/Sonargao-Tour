@@ -205,7 +205,7 @@ export const ExploreScene: React.FC<ExploreSceneProps> = ({
       </div>
 
       {/* Main Foreground Editorial Documentary Copy */}
-      <div className="relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-8 py-10 sm:py-14 pb-24 md:pb-16 flex-1 flex flex-col justify-end">
+      <div className="relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-8 py-10 sm:py-14 pb-36 md:pb-24 lg:pb-16 flex-1 flex flex-col justify-end">
         <div className="max-w-3xl space-y-4 sm:space-y-5">
           {/* Bilingual secondary title */}
           <div

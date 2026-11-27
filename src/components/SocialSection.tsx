@@ -75,7 +75,7 @@ export const SocialSection: React.FC = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
       {/* LEFT: POLLS & VOTING */}
-      <div className="lg:col-span-6 space-y-5">
+      <div id="polls-section" className="lg:col-span-6 space-y-5 scroll-mt-20">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-[#C45C3E]">
@@ -238,7 +238,7 @@ export const SocialSection: React.FC = () => {
       </div>
 
       {/* RIGHT: SHARED NOTES BOARD */}
-      <div className="lg:col-span-6 space-y-5">
+      <div id="notes-section" className="lg:col-span-6 space-y-5 scroll-mt-20">
         <div>
           <span className="text-xs font-bold uppercase tracking-widest text-[#C45C3E]">
             {lang === 'bn' ? 'শেয়ার্ড নোটবোর্ড' : 'SHARED NOTES'}

@@ -337,10 +337,10 @@ export const PlacesExploreSection: React.FC = () => {
         </div>
       </aside>
 
-      {/* Mobile Compact Documentary Progress Pill (01/04 .. 04/04) */}
+      {/* Mobile Compact Documentary Progress Pill (01/04 .. 04/04), sits cleanly above MobileBottomNav */}
       <nav
         aria-label={lang === 'bn' ? 'গন্তব্য অগ্রগতি' : 'Destination Progress'}
-        className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-[#D4AF37]/35 bg-[#07140D]/85 backdrop-blur-md px-3.5 py-1.5 text-xs text-[#FAF7F0] shadow-2xl max-w-[calc(100vw-2rem)]"
+        className="md:hidden fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-[#D4AF37]/35 bg-[#07140D]/85 backdrop-blur-md px-3.5 py-1.5 text-xs text-[#FAF7F0] shadow-2xl max-w-[calc(100vw-2rem)]"
       >
         <span className="font-bold tracking-wider text-[#F2D184] tabular-nums shrink-0">
           {progressText}

@@ -7,19 +7,26 @@ import {
   ChevronDown,
   Clock,
   Compass,
+  Landmark,
+  LayoutGrid,
   MapPin,
   Megaphone,
   Radio,
+  Sparkles,
+  StickyNote,
+  Vote,
   Wallet,
+  X,
 } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { DEFAULT_TOUR_SETTINGS } from '../data/defaultSeed';
 import { formatBDT, formatDateTime, toBanglaDigits, translations } from '../lib/i18n';
 import { toYouTubeBackgroundEmbedUrl } from '../lib/media';
+import { dismissWhatsNew, hasUnseenWhatsNew, isFeatureNew } from '../lib/whatsNew';
 import type { NavTab } from './Navbar';
 
 interface Props {
-  onNavigate: (tab: NavTab) => void;
+  onNavigate: (tab: NavTab, sectionId?: string) => void;
 }
 
 function getCountdown(targetIso: string) {
@@ -44,6 +51,7 @@ export const HomepageSection: React.FC<Props> = ({ onNavigate }) => {
   );
   const [videoFailed, setVideoFailed] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(() => hasUnseenWhatsNew());
 
   const heroVideoSource =
     settings?.hero_video_url?.trim() || DEFAULT_TOUR_SETTINGS.hero_video_url;
@@ -64,6 +72,9 @@ export const HomepageSection: React.FC<Props> = ({ onNavigate }) => {
   if (!state || !finance || !settings) return null;
 
   const completedChecklist = state.checklist.filter((c) => c.is_completed).length;
+  const activePoll = state.polls.find((p) => !p.is_closed) ?? state.polls[0];
+  const latestNote = state.notes.find((n) => n.is_pinned) ?? state.notes[0];
+  const num = (val: number) => (lang === 'bn' ? toBanglaDigits(val) : String(val));
 
   const highlights = [
     {
@@ -261,6 +272,47 @@ export const HomepageSection: React.FC<Props> = ({ onNavigate }) => {
 
       {/* BELOW HERO EDITORIAL SECTIONS */}
       <div id="overview" className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+        {/* Lightweight First-Visit What's New Banner */}
+        {showWhatsNew && (
+          <div className="rounded-2xl border border-[#D4AF37]/40 bg-[#14452F]/6 dark:bg-[#D4AF37]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#14452F] text-[#FAF7F0] dark:bg-[#D4AF37] dark:text-[#0E1612] px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shrink-0">
+                <Sparkles className="w-3 h-3" />
+                <span>{lang === 'bn' ? 'নতুন' : 'NEW'}</span>
+              </span>
+              <p className="text-xs sm:text-sm font-medium text-[#1A241E] dark:text-[#F2EFE7] truncate">
+                {lang === 'bn'
+                  ? 'নতুন সিনেম্যাটিক গন্তব্য ভিডিও, সহজ মোবাইল নেভ এবং সিস্টেম থিম যোগ হয়েছে।'
+                  : 'New: Cinematic Explore videos, 5-tab mobile navigation, and System theme mode.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  dismissWhatsNew();
+                  setShowWhatsNew(false);
+                  onNavigate('explore');
+                }}
+                className="rounded-xl bg-[#14452F] text-[#FAF7F0] dark:bg-[#D4AF37] dark:text-[#0E1612] px-3 py-1.5 text-xs font-bold cursor-pointer"
+              >
+                {lang === 'bn' ? 'গন্তব্য দেখুন' : 'Explore Scenes'}
+              </button>
+              <button
+                type="button"
+                aria-label={lang === 'bn' ? 'বন্ধ করুন' : 'Dismiss'}
+                onClick={() => {
+                  dismissWhatsNew();
+                  setShowWhatsNew(false);
+                }}
+                className="p-1.5 rounded-lg text-[#5C6A62] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Announcement + Live Tour Progress */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {(settings.announcement_bn || settings.announcement_en) && (
@@ -305,6 +357,132 @@ export const HomepageSection: React.FC<Props> = ({ onNavigate }) => {
               </strong>
             </div>
           </div>
+        </div>
+
+        {/* Quick Feature Discoverability Strip (Live Summaries & Shortcuts) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <button
+            type="button"
+            onClick={() => onNavigate('explore')}
+            className="group rounded-2xl bg-white dark:bg-[#131F19] border border-[#14452F]/12 dark:border-white/12 p-4 text-left hover:border-[#14452F]/40 dark:hover:border-[#D4AF37]/45 transition shadow-xs cursor-pointer flex items-start gap-3"
+          >
+            <div className="p-2.5 rounded-xl bg-[#14452F]/10 dark:bg-[#D4AF37]/15 text-[#14452F] dark:text-[#D4AF37] shrink-0">
+              <Landmark className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-bold text-sm truncate">
+                  {lang === 'bn' ? 'গন্তব্য ভিডিও' : 'Explore Film'}
+                </span>
+                {isFeatureNew('explore-documentary') && (
+                  <span className="rounded-full bg-[#C45C3E]/15 text-[#C45C3E] dark:bg-[#D4AF37]/20 dark:text-[#F2D184] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider shrink-0">
+                    {lang === 'bn' ? 'নতুন' : 'NEW'}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#5C6A62] dark:text-[#9AA89F] mt-1 truncate">
+                {lang === 'bn' ? 'পানাম নগর থেকে পুরান ঢাকা (০৪টি দৃশ্য)' : '4 muted video scenes • 01–04'}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('social', 'polls-section')}
+            className="group rounded-2xl bg-white dark:bg-[#131F19] border border-[#14452F]/12 dark:border-white/12 p-4 text-left hover:border-[#14452F]/40 dark:hover:border-[#D4AF37]/45 transition shadow-xs cursor-pointer flex items-start gap-3"
+          >
+            <div className="p-2.5 rounded-xl bg-[#C45C3E]/12 text-[#C45C3E] shrink-0">
+              <Vote className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-bold text-sm truncate">
+                  {lang === 'bn' ? 'গ্রুপ ভোট' : 'Active Poll'}
+                </span>
+                {activePoll && (
+                  <span className="text-[10px] font-bold text-[#C45C3E] shrink-0">
+                    {num(activePoll.votes.length)} {lang === 'bn' ? 'ভোট' : 'votes'}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#5C6A62] dark:text-[#9AA89F] mt-1 truncate">
+                {activePoll
+                  ? lang === 'bn'
+                    ? activePoll.question_bn
+                    : activePoll.question_en
+                  : lang === 'bn'
+                    ? 'মতামত ও ভোট দিন'
+                    : 'Create or vote in group polls'}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('social', 'notes-section')}
+            className="group rounded-2xl bg-white dark:bg-[#131F19] border border-[#14452F]/12 dark:border-white/12 p-4 text-left hover:border-[#14452F]/40 dark:hover:border-[#D4AF37]/45 transition shadow-xs cursor-pointer flex items-start gap-3"
+          >
+            <div className="p-2.5 rounded-xl bg-[#C89F3C]/15 text-[#9B7720] dark:text-[#D4AF37] shrink-0">
+              <StickyNote className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-bold text-sm truncate">
+                  {lang === 'bn' ? 'শেয়ার্ড নোট' : 'Shared Notes'}
+                </span>
+                <span className="text-[10px] font-bold text-[#5C6A62] dark:text-[#9AA89F] shrink-0">
+                  {num(state.notes.length)}
+                </span>
+              </div>
+              <p className="text-xs text-[#5C6A62] dark:text-[#9AA89F] mt-1 truncate">
+                {latestNote
+                  ? latestNote.title || latestNote.content
+                  : lang === 'bn'
+                    ? 'সবার জন্য জরুরি নোট দেখুন'
+                    : 'View pinned reminders & notes'}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('more')}
+            className="lg:hidden group rounded-2xl bg-white dark:bg-[#131F19] border border-[#14452F]/12 dark:border-white/12 p-4 text-left hover:border-[#14452F]/40 dark:hover:border-[#D4AF37]/45 transition shadow-xs cursor-pointer flex items-start gap-3"
+          >
+            <div className="p-2.5 rounded-xl bg-[#14452F]/10 dark:bg-[#D4AF37]/15 text-[#14452F] dark:text-[#D4AF37] shrink-0">
+              <LayoutGrid className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-sm truncate">
+                {lang === 'bn' ? 'সব টুল ও রিপোর্ট' : 'All Tools & Report'}
+              </div>
+              <p className="text-xs text-[#5C6A62] dark:text-[#9AA89F] mt-1 truncate">
+                {lang === 'bn'
+                  ? 'চেকলিস্ট, ছবি, টিম ও সেটিংস'
+                  : 'Checklist, Gallery, Members & Settings'}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('report')}
+            className="hidden lg:flex group rounded-2xl bg-white dark:bg-[#131F19] border border-[#14452F]/12 dark:border-white/12 p-4 text-left hover:border-[#14452F]/40 dark:hover:border-[#D4AF37]/45 transition shadow-xs cursor-pointer items-start gap-3"
+          >
+            <div className="p-2.5 rounded-xl bg-[#14452F]/10 dark:bg-[#D4AF37]/15 text-[#14452F] dark:text-[#D4AF37] shrink-0">
+              <LayoutGrid className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-sm truncate">
+                {lang === 'bn' ? 'চূড়ান্ত রিপোর্ট' : 'Final Report'}
+              </div>
+              <p className="text-xs text-[#5C6A62] dark:text-[#9AA89F] mt-1 truncate">
+                {lang === 'bn'
+                  ? 'সম্পূর্ণ ট্যুর ও হিসাব সামারি দেখুন'
+                  : 'Printable tour ledger & CSV export'}
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Destination Highlights */}

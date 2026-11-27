@@ -10,6 +10,8 @@ import { FinalReportSection } from './components/FinalReportSection';
 import { FinanceDashboard } from './components/FinanceDashboard';
 import { HomepageSection } from './components/HomepageSection';
 import { JourneySection } from './components/JourneySection';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { MoreFeaturesSection } from './components/MoreFeaturesSection';
 import { Navbar, type NavTab } from './components/Navbar';
 import { PhotosSection } from './components/PhotosSection';
 import { PlacesExploreSection } from './components/PlacesExploreSection';
@@ -30,7 +32,7 @@ const TourShell: React.FC = () => {
   }, [loading, session, activeTab, syncMusicForRoute]);
 
   const toastBanner = toast ? (
-    <div className="no-print fixed bottom-5 right-5 z-50 rounded-2xl bg-[#14452F] text-[#FAF7F0] px-4 py-3 text-xs font-semibold shadow-xl border border-[#D4AF37]/40">
+    <div className="no-print fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:bottom-5 right-4 sm:right-5 z-50 rounded-2xl bg-[#14452F] text-[#FAF7F0] px-4 py-3 text-xs font-semibold shadow-xl border border-[#D4AF37]/40 max-w-[calc(100vw-2rem)]">
       {toast}
     </div>
   ) : null;
@@ -65,9 +67,21 @@ const TourShell: React.FC = () => {
     );
   }
 
-  const navigate = (tab: NavTab) => {
+  const navigate = (tab: NavTab, sectionId?: string) => {
     setActiveTab(tab);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const reduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (sectionId) {
+      window.setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+        }
+      }, 60);
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   };
 
   return (
@@ -89,9 +103,15 @@ const TourShell: React.FC = () => {
         {activeTab === 'checklist' && <ChecklistSection />}
         {activeTab === 'report' && <FinalReportSection />}
         {activeTab === 'admin' && <AdminDashboard />}
+        {activeTab === 'more' && (
+          <MoreFeaturesSection
+            onNavigate={navigate}
+            onOpenAdminModal={() => setAdminModalOpen(true)}
+          />
+        )}
       </main>
 
-      <footer className="no-print border-t border-[#14452F]/10 dark:border-white/10 py-7 px-4 text-center text-xs text-[#5C6A62] dark:text-[#9AA89F]">
+      <footer className="no-print border-t border-[#14452F]/10 dark:border-white/10 pt-7 pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] lg:pb-7 px-4 text-center text-xs text-[#5C6A62] dark:text-[#9AA89F]">
         <div className="font-editorial font-bold text-[#14452F] dark:text-[#D4AF37]">
           {lang === 'bn' ? state.settings.website_name_bn : state.settings.website_name_en}
         </div>
@@ -101,6 +121,8 @@ const TourShell: React.FC = () => {
         </div>
         <DeveloperCredit />
       </footer>
+
+      <MobileBottomNav activeTab={activeTab} onSelectTab={navigate} />
 
       <AdminUnlockModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
 
