@@ -18,10 +18,73 @@ import { PhotosSection } from './components/PhotosSection';
 import { PlacesExploreSection } from './components/PlacesExploreSection';
 import { SocialSection } from './components/SocialSection';
 
+const VALID_NAV_TABS: NavTab[] = [
+  'home',
+  'explore',
+  'journey',
+  'crew',
+  'money',
+  'photos',
+  'social',
+  'checklist',
+  'report',
+  'admin',
+  'more',
+];
+
+function parseInitialTabFromUrl(): { tab: NavTab; notifKey: string | null } {
+  if (typeof window === 'undefined') return { tab: 'home', notifKey: null };
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const rawTab = params.get('tab') as NavTab | null;
+    const notifKey = params.get('notif');
+    return {
+      tab: rawTab && VALID_NAV_TABS.includes(rawTab) ? rawTab : 'home',
+      notifKey,
+    };
+  } catch {
+    return { tab: 'home', notifKey: null };
+  }
+}
+
 const TourShell: React.FC = () => {
-  const { session, loading, state, toast, lang, syncMusicForRoute } = useTour();
-  const [activeTab, setActiveTab] = useState<NavTab>('home');
+  const { session, loading, state, toast, lang, syncMusicForRoute, markNotificationRead } = useTour();
+  const [initialLaunch] = useState(() => parseInitialTabFromUrl());
+  const [activeTab, setActiveTab] = useState<NavTab>(initialLaunch.tab);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+
+  // Mark notification read & strip launch params once authenticated workspace renders
+  useEffect(() => {
+    if (loading || !session || !state) return;
+    if (initialLaunch.notifKey) {
+      markNotificationRead(initialLaunch.notifKey);
+    }
+    if (window.location.search.includes('tab=') || window.location.search.includes('notif=')) {
+      window.history.replaceState({}, '', '/');
+    }
+  }, [loading, session, state, initialLaunch.notifKey, markNotificationRead]);
+
+  // Handle Service Worker notification clicks while PWA/browser is already running
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const onMessage = (
+      event: MessageEvent<{ type?: string; tab?: string; eventKey?: string }>,
+    ) => {
+      if (event.data?.type !== 'TOUR_NOTIFICATION_CLICK') return;
+      const targetTab = event.data.tab as NavTab | undefined;
+      if (targetTab && VALID_NAV_TABS.includes(targetTab)) {
+        setActiveTab(targetTab);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      if (event.data.eventKey) {
+        markNotificationRead(event.data.eventKey);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', onMessage);
+    };
+  }, [markNotificationRead]);
 
   useEffect(() => {
     if (loading) return;

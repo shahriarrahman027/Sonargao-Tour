@@ -20,6 +20,7 @@ import { useTour } from '../context/TourContext';
 import { formatBDT, toBanglaDigits, translations } from '../lib/i18n';
 import { isFeatureNew } from '../lib/whatsNew';
 import type { NavTab } from './Navbar';
+import { PushSettingsCard } from './PushSettingsCard';
 
 export interface MoreFeatureItem {
   id: string;
@@ -301,6 +302,9 @@ export const MoreFeaturesSection: React.FC<Props> = ({ onNavigate, onOpenAdminMo
           </div>
         </div>
       )}
+
+      {/* Background Web Push Settings Card (Explicit opt-in + Multi-device status) */}
+      <PushSettingsCard />
 
       {/* App Preferences & Session (SFX & Logout only — Music & Theme remain in Header) */}
       <div className="rounded-2xl bg-white dark:bg-[#131F19] border border-[#14452F]/10 dark:border-white/10 p-4 flex flex-wrap items-center justify-between gap-3">

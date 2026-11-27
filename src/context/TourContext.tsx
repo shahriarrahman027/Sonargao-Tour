@@ -16,6 +16,15 @@ import {
   type NotificationBaseline,
 } from '../lib/notifications';
 import { loadOfflineSnapshot } from '../lib/offlineCache';
+import {
+  detectPushDiagnostics,
+  getActivePushEndpoint,
+  getActivePushSubscription,
+  requestAndSubscribeDevicePush,
+  serializePushSubscription,
+  unsubscribeDeviceBrowserPush,
+  type BrowserPushDiagnostics,
+} from '../lib/pushClient';
 import { soundEngine } from '../lib/sound';
 import {
   applyThemeToDocument,
@@ -31,6 +40,7 @@ import type {
   GateStatus,
   Language,
   MoneyNotification,
+  PushStatusSummary,
   RealtimeConnectionStatus,
   ResolvedTheme,
   SessionInfo,
@@ -75,6 +85,16 @@ interface TourContextValue {
   notifSoundEnabled: boolean;
   toggleNotifSound: () => void;
   realtimeStatus: RealtimeConnectionStatus;
+  pushDiagnostics: BrowserPushDiagnostics;
+  pushDeviceSubscribed: boolean;
+  pushStatus: PushStatusSummary;
+  pushBusy: boolean;
+  pushError: string | null;
+  enablePushNotifications: () => Promise<boolean>;
+  disablePushNotifications: () => Promise<void>;
+  setAllMemberPushEnabled: (enabled: boolean) => Promise<void>;
+  sendTestPush: () => Promise<void>;
+  refreshPushState: () => Promise<void>;
 }
 
 const TourContext = createContext<TourContextValue | null>(null);
@@ -108,6 +128,17 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [toast, setToast] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<MoneyNotification[]>([]);
   const [activeMoneyToast, setActiveMoneyToast] = useState<MoneyNotification | null>(null);
+  const [pushDiagnostics, setPushDiagnostics] = useState<BrowserPushDiagnostics>(() =>
+    detectPushDiagnostics({ isSupabaseConfigured: tourApi.isSupabaseMode() }),
+  );
+  const [pushDeviceSubscribed, setPushDeviceSubscribed] = useState(false);
+  const [pushStatus, setPushStatus] = useState<PushStatusSummary>({
+    push_enabled: true,
+    device_count: 0,
+    devices: [],
+  });
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   const sessionRef = useRef<SessionInfo | null>(null);
   const soundMutedRef = useRef(false);
@@ -465,6 +496,157 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }, [session, isOnline, refreshState]);
 
+  const refreshPushState = useCallback(async () => {
+    const diag = detectPushDiagnostics({ isSupabaseConfigured: tourApi.isSupabaseMode() });
+    setPushDiagnostics(diag);
+
+    const browserSub = await getActivePushSubscription();
+    setPushDeviceSubscribed(Boolean(browserSub));
+
+    if (!sessionRef.current || !tourApi.isSupabaseMode() || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return;
+    }
+    try {
+      const serverStatus = await tourApi.getMyPushStatus();
+      setPushStatus(serverStatus);
+      // Keep an already-granted device synced for the active member
+      if (browserSub && diag.support === 'supported' && diag.permission === 'granted' && serverStatus.push_enabled) {
+        try {
+          const serialized = serializePushSubscription(browserSub);
+          await tourApi.upsertPushSubscription(serialized);
+        } catch {
+          // ignore transient background sync error
+        }
+      }
+    } catch {
+      // ignore if offline or push migration not yet applied
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session) {
+      setPushDeviceSubscribed(false);
+      setPushStatus({ push_enabled: true, device_count: 0, devices: [] });
+      setPushError(null);
+      return;
+    }
+    void refreshPushState();
+  }, [session, refreshPushState]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const onSwMessage = (event: MessageEvent<{ type?: string; payload?: { eventKey?: string } }>) => {
+      if (!event.data?.type) return;
+      if (event.data.type === 'TOUR_PUSH_RECEIVED' && sessionRef.current) {
+        void refreshState();
+      } else if (event.data.type === 'TOUR_PUSH_SUBSCRIPTION_CHANGED' && sessionRef.current) {
+        void refreshPushState();
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onSwMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', onSwMessage);
+    };
+  }, [refreshState, refreshPushState]);
+
+  const enablePushNotifications = useCallback(async (): Promise<boolean> => {
+    setPushError(null);
+    setPushBusy(true);
+    try {
+      const serialized = await requestAndSubscribeDevicePush();
+      const status = await tourApi.upsertPushSubscription(serialized);
+      setPushDeviceSubscribed(true);
+      setPushStatus(status);
+      setPushDiagnostics(detectPushDiagnostics({ isSupabaseConfigured: tourApi.isSupabaseMode() }));
+      soundEngine.playNotificationPop(true);
+      showToast(
+        lang === 'bn'
+          ? '🔔 এই ডিভাইসে ব্যাকগ্রাউন্ড পুশ নোটিফিকেশন চালু হয়েছে!'
+          : '🔔 Background push notifications enabled on this device!',
+      );
+      return true;
+    } catch (err) {
+      setPushDiagnostics(detectPushDiagnostics({ isSupabaseConfigured: tourApi.isSupabaseMode() }));
+      setPushError(
+        err instanceof Error
+          ? err.message
+          : lang === 'bn'
+            ? 'পুশ নোটিফিকেশন চালু করা যায়নি।'
+            : 'Could not enable push notifications.',
+      );
+      return false;
+    } finally {
+      setPushBusy(false);
+    }
+  }, [lang, showToast]);
+
+  const disablePushNotifications = useCallback(async () => {
+    setPushError(null);
+    setPushBusy(true);
+    try {
+      const endpoint = await unsubscribeDeviceBrowserPush();
+      const status = await tourApi.removePushSubscription(endpoint);
+      setPushDeviceSubscribed(false);
+      setPushStatus(status);
+      setPushDiagnostics(detectPushDiagnostics({ isSupabaseConfigured: tourApi.isSupabaseMode() }));
+      showToast(
+        lang === 'bn'
+          ? 'এই ডিভাইসে ব্যাকগ্রাউন্ড পুশ বন্ধ করা হয়েছে।'
+          : 'Background push notifications disabled on this device.',
+      );
+    } catch (err) {
+      setPushError(err instanceof Error ? err.message : 'Failed to disable notifications');
+    } finally {
+      setPushBusy(false);
+    }
+  }, [lang, showToast]);
+
+  const setAllMemberPushEnabled = useCallback(
+    async (enabled: boolean) => {
+      setPushError(null);
+      setPushBusy(true);
+      try {
+        const status = await tourApi.setMemberPushPreference(enabled);
+        setPushStatus(status);
+        showToast(
+          enabled
+            ? lang === 'bn'
+              ? 'সব ডিভাইসে পুশ নোটিফিকেশন পুনরায় চালু হয়েছে।'
+              : 'Push notifications resumed across your devices.'
+            : lang === 'bn'
+              ? 'আপনার সব ডিভাইসের পুশ নোটিফিকেশন বন্ধ করা হয়েছে।'
+              : 'Paused push notifications across all your devices.',
+        );
+      } catch (err) {
+        setPushError(err instanceof Error ? err.message : 'Failed to update push preference');
+      } finally {
+        setPushBusy(false);
+      }
+    },
+    [lang, showToast],
+  );
+
+  const sendTestPush = useCallback(async () => {
+    setPushError(null);
+    setPushBusy(true);
+    try {
+      const res = await tourApi.sendTestPushNotification();
+      showToast(
+        res.sent > 0
+          ? lang === 'bn'
+            ? `টেস্ট পুশ পাঠানো হয়েছে (${res.sent}টি ডিভাইস)!`
+            : `Test push sent (${res.sent} device${res.sent === 1 ? '' : 's'})!`
+          : lang === 'bn'
+            ? 'কোনো সক্রিয় ডিভাইসে পাঠানো যায়নি — আবার চালু করে চেষ্টা করুন।'
+            : 'No active push devices reached — re-enable notifications first.',
+      );
+    } catch (err) {
+      setPushError(err instanceof Error ? err.message : 'Failed to send test push');
+    } finally {
+      setPushBusy(false);
+    }
+  }, [lang, showToast]);
+
   const login = useCallback(
     async (studentId: string, groupPasscode?: string) => {
       const sess = await tourApi.loginWithStudentId(studentId, groupPasscode);
@@ -492,12 +674,21 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const logout = useCallback(async () => {
-    await tourApi.logout();
+    try {
+      const endpoint = await getActivePushEndpoint().catch(() => null);
+      if (endpoint && tourApi.isSupabaseMode()) {
+        await tourApi.removePushSubscription(endpoint).catch(() => {});
+      }
+    } finally {
+      await tourApi.logout();
+    }
     sessionRef.current = null;
     baselineRef.current = null;
     notificationsRef.current = [];
     seenEventKeysRef.current = new Set();
     dismissMoneyToast();
+    setPushDeviceSubscribed(false);
+    setPushStatus({ push_enabled: true, device_count: 0, devices: [] });
     setNotifications([]);
     setSession(null);
     setState(null);
@@ -563,6 +754,16 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notifSoundEnabled,
         toggleNotifSound,
         realtimeStatus,
+        pushDiagnostics,
+        pushDeviceSubscribed,
+        pushStatus,
+        pushBusy,
+        pushError,
+        enablePushNotifications,
+        disablePushNotifications,
+        setAllMemberPushEnabled,
+        sendTestPush,
+        refreshPushState,
       }}
     >
       {children}

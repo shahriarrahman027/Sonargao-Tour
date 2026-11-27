@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['images/*.svg', 'images/*.jpg'],
+      includeAssets: ['images/*.svg', 'images/*.jpg', 'icons/*.svg'],
       manifest: {
         name: 'সস্তায় ১ দিনের ট্যুর — Sostay 1 diner tour',
         short_name: 'সস্তায় ১ দিনের ট্যুর',
@@ -19,6 +19,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',
+        scope: '/',
         icons: [
           {
             src: '/images/logo.jpg',
@@ -26,9 +27,16 @@ export default defineConfig({
             type: 'image/jpeg',
             purpose: 'any maskable',
           },
+          {
+            src: '/icons/icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
         ],
       },
       workbox: {
+        importScripts: ['/sw-push.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,webp,woff2}'],
         runtimeCaching: [
           {

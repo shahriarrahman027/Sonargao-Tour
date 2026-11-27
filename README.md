@@ -60,4 +60,37 @@ npm run dev
 3. Add Environment Variables in Vercel Project Settings:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-4. Deploy! `vercel.json` handles SPA routing and security headers automatically.
+   - `VITE_VAPID_PUBLIC_KEY` (client-safe **public** VAPID key only — never put `VAPID_PRIVATE_KEY` in Vercel or any `VITE_*` variable)
+4. Deploy! `vercel.json` handles SPA routing, Service Worker no-cache headers (`/sw.js`, `/sw-push.js`), and security headers automatically.
+
+---
+
+## 5. Background Web Push Notifications Setup (PWA + Supabase Edge Function)
+
+Members receive lock-screen / closed-tab Bangla notifications via standard **Web Push (VAPID)** (`public/sw-push.js` + `supabase/functions/send-push-notification`):
+
+1. **Generate VAPID Keys** (run once locally):
+   ```bash
+   npx web-push generate-vapid-keys --json
+   ```
+2. **Apply Database Migrations** (`push_subscriptions`, `push_delivery_log`, RPCs, and Realtime publication):
+   ```bash
+   supabase db push
+   ```
+3. **Configure Supabase Edge Function Secrets** (server-side only — never committed or prefixed with `VITE_`):
+   ```bash
+   supabase secrets set \
+     VAPID_PUBLIC_KEY="<your-vapid-public-key>" \
+     VAPID_PRIVATE_KEY="<your-vapid-private-key>" \
+     VAPID_SUBJECT="mailto:your-email@example.com"
+   ```
+   *(Note: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by Supabase Edge Functions.)*
+4. **Deploy the Push Edge Function**:
+   ```bash
+   supabase functions deploy send-push-notification
+   ```
+5. **Frontend Public Key (`VITE_VAPID_PUBLIC_KEY`)**:
+   - Add `VITE_VAPID_PUBLIC_KEY="<your-vapid-public-key>"` to `.env` (local) and Vercel Project Environment Variables, then redeploy so the built Service Worker (`dist/sw.js`) and UI subscribe with the matching public key.
+6. **iOS & Mobile Usage Note**:
+   - On Android Chrome & supported desktop browsers, members open the **Notification Bell** or **More → Settings** and click **Enable Notifications**.
+   - On iPhone/iPad (iOS 16.4+), Safari requires tapping **Share → Add to Home Screen** first and launching the installed Home Screen app before enabling background push.

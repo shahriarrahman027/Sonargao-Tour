@@ -347,3 +347,24 @@ export interface MoneyNotification {
   read: boolean;
   dismissed: boolean;
 }
+
+export type PushSupportStatus =
+  | 'supported'
+  | 'ios_install_required'
+  | 'unsupported'
+  | 'insecure_context'
+  | 'not_configured';
+
+export interface PushDeviceSummary {
+  id: string;
+  device_label: string;
+  enabled: boolean;
+  endpoint_hint: string;
+  updated_at: string;
+}
+
+export interface PushStatusSummary {
+  push_enabled: boolean;
+  device_count: number;
+  devices: PushDeviceSummary[];
+}

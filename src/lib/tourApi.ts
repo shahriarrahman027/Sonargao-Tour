@@ -32,6 +32,7 @@ import type {
   ItineraryItem,
   Member,
   Poll,
+  PushStatusSummary,
   RealtimeConnectionStatus,
   RealtimeMoneySignal,
   SessionInfo,
@@ -42,6 +43,7 @@ import type {
 } from '../types/tour';
 import { roundMoney, validateAllocationsMatchTotal } from './accounting';
 import { saveOfflineSnapshot } from './offlineCache';
+import { getActivePushEndpoint, type SerializedPushSubscription } from './pushClient';
 import {
   getStoredSessionToken,
   getSupabaseClient,
@@ -263,6 +265,28 @@ async function publishRealtimeMoneySignal(signal: RealtimeMoneySignal): Promise<
     }
   } catch {
     // Fallback reconnect diffing ensures receiving clients still catch up cleanly
+  }
+}
+
+async function triggerBackgroundPushDelivery(payload: {
+  eventKey: string;
+  kind: string;
+  entityId?: string;
+}): Promise<void> {
+  const sb = getSupabaseClient();
+  if (!sb) return;
+  try {
+    const excludeEndpoint = await getActivePushEndpoint().catch(() => null);
+    const token = getStoredSessionToken();
+    await sb.functions.invoke('send-push-notification', {
+      headers: token ? { 'x-tour-session': token } : undefined,
+      body: {
+        ...payload,
+        excludeEndpoint: excludeEndpoint || undefined,
+      },
+    });
+  } catch {
+    // Push trigger failures are non-fatal; realtime + DB catch-up still remain consistent.
   }
 }
 
@@ -638,16 +662,25 @@ export const tourApi = {
     });
     if (error) throw new Error(error.message);
     const createdId = typeof data === 'string' ? data : '';
+    const pushKind =
+      roundMoney(input.amount) < 0 || Boolean(input.is_correction)
+        ? 'contribution_refund'
+        : 'contribution_added';
+    const eventKey = createdId ? `contrib:${createdId}` : `contrib_sync:${Date.now()}`;
     void publishRealtimeMoneySignal({
-      eventKey: createdId ? `contrib:${createdId}` : `contrib_sync:${Date.now()}`,
-      kind:
-        roundMoney(input.amount) < 0 || Boolean(input.is_correction)
-          ? 'contribution_refund'
-          : 'contribution_added',
+      eventKey,
+      kind: pushKind,
       entityId: createdId || undefined,
       actorMemberId: activeSupabaseMemberId,
       occurredAt: new Date().toISOString(),
     });
+    if (createdId) {
+      void triggerBackgroundPushDelivery({
+        eventKey,
+        kind: pushKind,
+        entityId: createdId,
+      });
+    }
   },
 
   async createExpense(input: {
@@ -744,13 +777,21 @@ export const tourApi = {
     });
     if (error) throw new Error(error.message);
     const createdId = typeof data === 'string' ? data : '';
+    const eventKey = createdId ? `expense:${createdId}` : `expense_sync:${Date.now()}`;
     void publishRealtimeMoneySignal({
-      eventKey: createdId ? `expense:${createdId}` : `expense_sync:${Date.now()}`,
+      eventKey,
       kind: 'expense_created',
       entityId: createdId || undefined,
       actorMemberId: activeSupabaseMemberId,
       occurredAt: new Date().toISOString(),
     });
+    if (createdId) {
+      void triggerBackgroundPushDelivery({
+        eventKey,
+        kind: 'expense_created',
+        entityId: createdId,
+      });
+    }
   },
 
   async updateExpenseWithAudit(input: {
@@ -864,12 +905,19 @@ export const tourApi = {
       p_is_reimbursed: Boolean(input.is_reimbursed),
     });
     if (error) throw new Error(error.message);
+    const editKind = Boolean(input.is_reimbursed) ? 'expense_reimbursed' : 'expense_updated';
+    const eventKey = `expense_edit_sync:${input.expense_id}:${Date.now()}`;
     void publishRealtimeMoneySignal({
-      eventKey: `expense_edit_sync:${input.expense_id}:${Date.now()}`,
-      kind: Boolean(input.is_reimbursed) ? 'expense_reimbursed' : 'expense_updated',
+      eventKey,
+      kind: editKind,
       entityId: input.expense_id,
       actorMemberId: activeSupabaseMemberId,
       occurredAt: new Date().toISOString(),
+    });
+    void triggerBackgroundPushDelivery({
+      eventKey,
+      kind: editKind,
+      entityId: input.expense_id,
     });
   },
 
@@ -928,12 +976,18 @@ export const tourApi = {
       p_reason: reason.trim(),
     });
     if (error) throw new Error(error.message);
+    const eventKey = `expense_void:${expenseId}`;
     void publishRealtimeMoneySignal({
-      eventKey: `expense_void:${expenseId}`,
+      eventKey,
       kind: 'expense_voided',
       entityId: expenseId,
       actorMemberId: activeSupabaseMemberId,
       occurredAt: new Date().toISOString(),
+    });
+    void triggerBackgroundPushDelivery({
+      eventKey,
+      kind: 'expense_voided',
+      entityId: expenseId,
     });
   },
 
@@ -1549,6 +1603,83 @@ export const tourApi = {
         activeSupabaseChannel = null;
       }
       void sb.removeChannel(channel);
+    };
+  },
+
+  // --------------------------------------------------------------------------
+  // Background Web Push Subscription & Preference RPCs
+  // --------------------------------------------------------------------------
+  async getMyPushStatus(): Promise<PushStatusSummary> {
+    const sb = getSupabaseClient();
+    if (!sb) {
+      return { push_enabled: false, device_count: 0, devices: [] };
+    }
+    const { data, error } = await sb.rpc('get_my_push_status');
+    if (error || !data) {
+      throw new Error(error?.message || 'Failed to inspect push notification status');
+    }
+    return data as PushStatusSummary;
+  },
+
+  async upsertPushSubscription(sub: SerializedPushSubscription): Promise<PushStatusSummary> {
+    const sb = getSupabaseClient();
+    if (!sb) {
+      throw new Error('Background Web Push requires Supabase + Edge Function configuration.');
+    }
+    const { error } = await sb.rpc('upsert_push_subscription', {
+      p_endpoint: sub.endpoint,
+      p_p256dh: sub.p256dh,
+      p_auth: sub.auth,
+      p_user_agent: sub.userAgent,
+      p_device_label: sub.deviceLabel,
+    });
+    if (error) throw new Error(error.message);
+    return await tourApi.getMyPushStatus();
+  },
+
+  async removePushSubscription(endpoint?: string | null): Promise<PushStatusSummary> {
+    const sb = getSupabaseClient();
+    if (!sb) {
+      return { push_enabled: false, device_count: 0, devices: [] };
+    }
+    const { error } = await sb.rpc('remove_push_subscription', {
+      p_endpoint: endpoint || null,
+    });
+    if (error) throw new Error(error.message);
+    return await tourApi.getMyPushStatus();
+  },
+
+  async setMemberPushPreference(enabled: boolean): Promise<PushStatusSummary> {
+    const sb = getSupabaseClient();
+    if (!sb) {
+      return { push_enabled: false, device_count: 0, devices: [] };
+    }
+    const { error } = await sb.rpc('set_member_push_preference', {
+      p_enabled: enabled,
+    });
+    if (error) throw new Error(error.message);
+    return await tourApi.getMyPushStatus();
+  },
+
+  async sendTestPushNotification(): Promise<{ sent: number; targeted: number }> {
+    const sb = getSupabaseClient();
+    if (!sb) {
+      throw new Error('Background Web Push requires Supabase + Edge Function configuration.');
+    }
+    const token = getStoredSessionToken();
+    const { data, error } = await sb.functions.invoke('send-push-notification', {
+      headers: token ? { 'x-tour-session': token } : undefined,
+      body: {
+        kind: 'test',
+        eventKey: `test:${Date.now()}`,
+      },
+    });
+    if (error) throw new Error(error.message);
+    const res = (data || {}) as { sent?: number; targeted?: number; error?: string };
+    if (res.error) throw new Error(res.error);
+    return {
+      sent: Number(res.sent || 0),
+      targeted: Number(res.targeted || 0),
     };
   },
 };

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTour } from '../context/TourContext';
 import { formatBDT, formatDateTime, toBanglaDigits } from '../lib/i18n';
+import { PushSettingsCard } from './PushSettingsCard';
 
 interface Props {
   onOpenMoney: () => void;
@@ -193,6 +194,11 @@ export const NotificationCenter: React.FC<Props> = ({ onOpenMoney }) => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+          </div>
+
+          {/* Background Push Toggle Card */}
+          <div className="px-3 pt-3">
+            <PushSettingsCard compact />
           </div>
 
           {/* Notification List */}
