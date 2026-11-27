@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ArrowDown,
   ChevronRight,
@@ -8,8 +8,8 @@ import {
 } from 'lucide-react';
 import { resolveExploreVideoUrl } from '../config/exploreVideos';
 import { toBanglaDigits } from '../lib/i18n';
-import { toYouTubeBackgroundEmbedUrl } from '../lib/media';
 import type { ExploreDestination, Language } from '../types/tour';
+import { BackgroundVideo } from './BackgroundVideo';
 
 interface ExploreSceneProps {
   dest: ExploreDestination;
@@ -47,37 +47,9 @@ export const ExploreScene: React.FC<ExploreSceneProps> = ({
   const localRef = useRef<HTMLElement | null>(null);
   const bgLayerRef = useRef<HTMLDivElement | null>(null);
 
-  const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [videoFailed, setVideoFailed] = useState(false);
-
   const effectiveVideoUrl = resolveExploreVideoUrl(dest.id, dest.youtube_url);
-  const bgEmbedUrl = toYouTubeBackgroundEmbedUrl(effectiveVideoUrl);
-  const shouldMountVideo =
-    Boolean(bgEmbedUrl) &&
-    isOnline &&
-    !videoFailed &&
-    isNearViewport;
 
-  // Keep unmount check tightly tied to active/adjacent window via parent prop `isNearViewport`,
-  // while tracking load state whenever URL or mount state changes.
-  useEffect(() => {
-    setIframeLoaded(false);
-    setVideoFailed(false);
-  }, [bgEmbedUrl]);
-
-  useEffect(() => {
-    if (!shouldMountVideo) {
-      setIframeLoaded(false);
-      return;
-    }
-    if (iframeLoaded) return;
-    const timeoutId = window.setTimeout(() => {
-      setVideoFailed(true);
-    }, 15000);
-    return () => window.clearTimeout(timeoutId);
-  }, [shouldMountVideo, iframeLoaded]);
-
-  // Subtle GPU-only parallax drift on scroll (skipped if prefers-reduced-motion)
+  // Subtle GPU-only vertical parallax drift on scroll (skipped if prefers-reduced-motion)
   useEffect(() => {
     if (prefersReducedMotion) {
       if (bgLayerRef.current) {
@@ -97,11 +69,10 @@ export const ExploreScene: React.FC<ExploreSceneProps> = ({
       const vh = window.innerHeight || 800;
       if (rect.bottom < -vh * 0.5 || rect.top > vh * 1.5) return;
 
-      // Normalized offset in [-1, 1] relative to viewport center
+      // Integer vertical parallax within the ±32px bleed band (no scaling/blur distortion)
       const progress = (rect.top + rect.height / 2 - vh / 2) / vh;
-      const shiftY = Math.max(-28, Math.min(28, progress * -26));
-      const scale = isActive ? 1.03 : 1.08;
-      bgEl.style.transform = `translate3d(0, ${shiftY.toFixed(1)}px, 0) scale(${scale})`;
+      const shiftY = Math.round(Math.max(-24, Math.min(24, progress * -24)));
+      bgEl.style.transform = `translate3d(0, ${shiftY}px, 0)`;
     };
 
     const schedule = () => {
@@ -118,7 +89,7 @@ export const ExploreScene: React.FC<ExploreSceneProps> = ({
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
     };
-  }, [prefersReducedMotion, isActive]);
+  }, [prefersReducedMotion]);
 
   const setRefs = (el: HTMLElement | null) => {
     localRef.current = el;
@@ -146,44 +117,18 @@ export const ExploreScene: React.FC<ExploreSceneProps> = ({
       aria-label={`${dest.numberLabel} ${lang === 'bn' ? dest.name_bn : dest.name_en}`}
       className="relative min-h-[calc(100svh-4rem)] w-full overflow-hidden bg-[#07140D] text-[#FAF7F0] flex flex-col justify-between"
     >
-      {/* Background Visual Layer (Parallax Fallback Artwork + Lazy Muted YouTube Video) */}
-      <div
-        ref={bgLayerRef}
-        className="explore-motion pointer-events-none absolute -inset-[7%] overflow-hidden transition-transform duration-1000 ease-out will-change-transform"
-      >
-        <img
-          src={dest.fallback_image_url}
-          alt={`${dest.name_en} — ${dest.name_bn}`}
-          className={`explore-motion h-full w-full object-cover transition-transform duration-[1800ms] ease-out ${
-            !prefersReducedMotion && isActive ? 'scale-100' : 'scale-105'
-          } opacity-75`}
-        />
-
-        {shouldMountVideo && bgEmbedUrl && (
-          <iframe
-            src={bgEmbedUrl}
-            title={`${dest.name_en} background film`}
-            loading="lazy"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            referrerPolicy="strict-origin-when-cross-origin"
-            tabIndex={-1}
-            aria-hidden="true"
-            onLoad={() => setIframeLoaded(true)}
-            onError={() => setVideoFailed(true)}
-            style={{
-              width: 'max(100%, 177.78svh)',
-              height: 'max(100%, 56.25vw)',
-            }}
-            className={`explore-motion pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-0 transition-opacity duration-1000 ${
-              iframeLoaded ? 'opacity-90' : 'opacity-0'
-            }`}
-          />
-        )}
-      </div>
-
-      {/* Multi-stop Documentary Gradient Overlays for Legibility & Seamless Scene Transitions */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#07140D]/85 via-[#081910]/35 to-[#07140D]/92" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#07140D]/88 via-[#07140D]/52 to-transparent sm:to-[#07140D]/20" />
+      {/* Direct Cinematic Background Video Layer (No poster/thumbnail image layer or blur filters) */}
+      <BackgroundVideo
+        src={effectiveVideoUrl}
+        title={`${dest.name_en} background film`}
+        isOnline={isOnline}
+        shouldMount={isNearViewport}
+        loading="eager"
+        layerRef={bgLayerRef}
+        mediaLayerClassName="explore-motion inset-x-0 -inset-y-8"
+        fallbackClassName="bg-gradient-to-br from-[#07140D] via-[#0E2D1E] to-[#133827]"
+        overlayClassName="bg-[linear-gradient(to_bottom,rgba(7,20,13,0.68)_0%,rgba(7,20,13,0.12)_45%,rgba(7,20,13,0.88)_100%),linear-gradient(to_right,rgba(7,20,13,0.72)_0%,rgba(7,20,13,0.22)_55%,transparent_100%)]"
+      />
 
       {/* Top Documentary Chapter Strip */}
       <div className="relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-8 pt-7 sm:pt-10 flex flex-wrap items-center justify-between gap-3">

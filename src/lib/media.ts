@@ -42,7 +42,7 @@ export function toYouTubeEmbedUrl(
 }
 
 /**
- * Privacy-enhanced background video embed URL for the homepage hero:
+ * Privacy-enhanced background video embed URL:
  * autoplay=1, mute=1, loop=1 + playlist=<id> (required by YouTube for single-video looping),
  * hidden controls, and inline mobile playback.
  */
@@ -50,6 +50,46 @@ export function toYouTubeBackgroundEmbedUrl(rawUrl: string): string | null {
   const id = extractYouTubeId(rawUrl);
   if (!id) return null;
   return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3`;
+}
+
+export type BackgroundMediaKind = 'youtube' | 'video' | 'none';
+
+export interface ResolvedBackgroundMedia {
+  kind: BackgroundMediaKind;
+  src: string;
+}
+
+/**
+ * Classifies a background video source as either a YouTube background embed
+ * or a direct native video file URL without poster/image fallbacks.
+ */
+export function resolveBackgroundMedia(rawUrl?: string | null): ResolvedBackgroundMedia {
+  const trimmed = (rawUrl || '').trim();
+  if (!trimmed) {
+    return { kind: 'none', src: '' };
+  }
+  const ytEmbed = toYouTubeBackgroundEmbedUrl(trimmed);
+  if (ytEmbed) {
+    return { kind: 'youtube', src: ytEmbed };
+  }
+  return { kind: 'video', src: trimmed };
+}
+
+/**
+ * Determines whether background media should mount cleanly given viewport,
+ * connectivity, and error state. Local root-relative streams remain mountable offline.
+ */
+export function shouldMountBackgroundMedia(
+  resolved: ResolvedBackgroundMedia,
+  options: { isOnline: boolean; shouldMount: boolean; hasFailed: boolean },
+): boolean {
+  if (!options.shouldMount || options.hasFailed || resolved.kind === 'none') {
+    return false;
+  }
+  if (resolved.kind === 'video' && resolved.src.startsWith('/') && !resolved.src.startsWith('//')) {
+    return true;
+  }
+  return options.isOnline;
 }
 
 export function getYouTubeThumbnailUrl(rawUrl: string): string | null {

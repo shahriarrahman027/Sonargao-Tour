@@ -8,6 +8,8 @@ import { DEFAULT_EXPLORE_DESTINATIONS } from '../../data/defaultSeed';
 import {
   extractYouTubeId,
   getYouTubeThumbnailUrl,
+  resolveBackgroundMedia,
+  shouldMountBackgroundMedia,
   toYouTubeBackgroundEmbedUrl,
   toYouTubeEmbedUrl,
 } from '../media';
@@ -143,5 +145,39 @@ describe("Places We'll Explore — Sequence, Media Parsing & Admin Persistence",
     expect(panam?.media_mode).toBe('youtube');
     expect(panam?.youtube_url).toBe('https://youtu.be/dQw4w9WgXcQ');
     expect(panam?.photos).toHaveLength(2);
+  });
+
+  it('resolves background video sources directly as muted YouTube or native video streams with clean fallback rules', () => {
+    const yt = resolveBackgroundMedia('https://www.youtube.com/watch?v=oxF2UKB0VjY');
+    expect(yt.kind).toBe('youtube');
+    expect(yt.src).toContain('autoplay=1');
+    expect(yt.src).toContain('mute=1');
+    expect(yt.src).toContain('loop=1');
+    expect(yt.src).toContain('playsinline=1');
+
+    const mp4 = resolveBackgroundMedia('https://cdn.example.com/panam.mp4');
+    expect(mp4).toEqual({ kind: 'video', src: 'https://cdn.example.com/panam.mp4' });
+
+    const localVideo = resolveBackgroundMedia('/videos/panam.mp4');
+    expect(localVideo).toEqual({ kind: 'video', src: '/videos/panam.mp4' });
+
+    const empty = resolveBackgroundMedia('   ');
+    expect(empty).toEqual({ kind: 'none', src: '' });
+
+    expect(
+      shouldMountBackgroundMedia(yt, { isOnline: true, shouldMount: true, hasFailed: false }),
+    ).toBe(true);
+    expect(
+      shouldMountBackgroundMedia(yt, { isOnline: false, shouldMount: true, hasFailed: false }),
+    ).toBe(false);
+    expect(
+      shouldMountBackgroundMedia(mp4, { isOnline: true, shouldMount: true, hasFailed: true }),
+    ).toBe(false);
+    expect(
+      shouldMountBackgroundMedia(localVideo, { isOnline: false, shouldMount: true, hasFailed: false }),
+    ).toBe(true);
+    expect(
+      shouldMountBackgroundMedia(empty, { isOnline: true, shouldMount: true, hasFailed: false }),
+    ).toBe(false);
   });
 });

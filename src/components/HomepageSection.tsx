@@ -21,8 +21,8 @@ import {
 import { useTour } from '../context/TourContext';
 import { DEFAULT_TOUR_SETTINGS } from '../data/defaultSeed';
 import { formatBDT, formatDateTime, toBanglaDigits, translations } from '../lib/i18n';
-import { toYouTubeBackgroundEmbedUrl } from '../lib/media';
 import { dismissWhatsNew, hasUnseenWhatsNew, isFeatureNew } from '../lib/whatsNew';
+import { BackgroundVideo } from './BackgroundVideo';
 import type { NavTab } from './Navbar';
 
 interface Props {
@@ -49,18 +49,10 @@ export const HomepageSection: React.FC<Props> = ({ onNavigate }) => {
   const [countdown, setCountdown] = useState(() =>
     getCountdown(settings?.tour_date || '2026-11-28T06:30:00+06:00'),
   );
-  const [videoFailed, setVideoFailed] = useState(false);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
   const [showWhatsNew, setShowWhatsNew] = useState(() => hasUnseenWhatsNew());
 
   const heroVideoSource =
     settings?.hero_video_url?.trim() || DEFAULT_TOUR_SETTINGS.hero_video_url;
-  const heroYouTubeEmbed = toYouTubeBackgroundEmbedUrl(heroVideoSource);
-
-  useEffect(() => {
-    setVideoFailed(false);
-    setIframeLoaded(false);
-  }, [heroVideoSource]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -114,51 +106,15 @@ export const HomepageSection: React.FC<Props> = ({ onNavigate }) => {
   return (
     <div className="space-y-14 pb-16">
       {/* FULL-SCREEN CINEMATIC HERO */}
-      <section className="relative min-h-[88vh] flex flex-col justify-between overflow-hidden bg-[#0E2D1E] text-[#FAF7F0]">
-        {/* Fallback Heritage Artwork (always rendered beneath while video loads or if offline/blocked) */}
-        <img
-          src={settings.hero_fallback_image_url || '/images/panam-hero.svg'}
-          alt="Panam Nagar Heritage"
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75 scale-105 transition-transform duration-[18s]"
+      <section className="relative min-h-[88vh] flex flex-col justify-between overflow-hidden bg-[#07140D] text-[#FAF7F0]">
+        <BackgroundVideo
+          src={heroVideoSource}
+          title="Homepage background video"
+          isOnline={isOnline}
+          loading="eager"
+          fallbackClassName="bg-gradient-to-br from-[#07140D] via-[#0E2D1E] to-[#133827]"
+          overlayClassName="bg-gradient-to-b from-[#0A2015]/68 via-[#0E2D1E]/24 to-[#0A1911]/88"
         />
-
-        {/* Responsive Background Video: YouTube Embed or Direct Video URL */}
-        {heroVideoSource && !videoFailed && isOnline && (
-          heroYouTubeEmbed ? (
-            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-              <iframe
-                src={heroYouTubeEmbed}
-                title="Homepage background video"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                referrerPolicy="strict-origin-when-cross-origin"
-                tabIndex={-1}
-                onLoad={() => setIframeLoaded(true)}
-                onError={() => setVideoFailed(true)}
-                style={{
-                  width: 'max(100vw, 177.78vh)',
-                  height: 'max(100vh, 56.25vw)',
-                }}
-                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-0 transition-opacity duration-700 ${
-                  iframeLoaded ? 'opacity-80' : 'opacity-0'
-                }`}
-              />
-            </div>
-          ) : (
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster={settings.hero_fallback_image_url || '/images/panam-hero.svg'}
-              onError={() => setVideoFailed(true)}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-65"
-            >
-              <source src={heroVideoSource} />
-            </video>
-          )
-        )}
-
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0A2015]/82 via-[#0E2D1E]/62 to-[#0A1911]/95" />
 
         <div className="relative z-10 max-w-6xl mx-auto w-full px-4 sm:px-6 pt-12 sm:pt-16 pb-10 flex-1 flex flex-col justify-center">
           <div className="max-w-3xl">
