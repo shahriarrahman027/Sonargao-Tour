@@ -14,7 +14,7 @@ interface Props {
 }
 
 export const ContributionModal: React.FC<Props> = ({ open, correctingContribution, onClose }) => {
-  const { lang, state, refreshState, showToast } = useTour();
+  const { lang, state, refreshState } = useTour();
   const members = state?.members || [];
   const defaultTarget = state?.settings.target_contribution_per_person ?? 1000;
 
@@ -56,7 +56,6 @@ export const ContributionModal: React.FC<Props> = ({ open, correctingContributio
       soundEngine.playCoinChime();
       void confetti({ particleCount: 40, spread: 55, origin: { y: 0.7 } });
       await refreshState();
-      showToast(lang === 'bn' ? 'জমা সফলভাবে রেকর্ড হয়েছে!' : 'Cash contribution recorded!');
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to record contribution');

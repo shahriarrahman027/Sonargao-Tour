@@ -8,6 +8,7 @@ class TourSoundEngine {
   private ambientGain: GainNode | null = null;
   private ambientOscillators: OscillatorNode[] = [];
   private ambientTimer: number | null = null;
+  private lastNotificationSoundAt = 0;
 
   private ensureContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -55,6 +56,7 @@ class TourSoundEngine {
 
   playCoinChime() {
     if (this.muted) return;
+    this.lastNotificationSoundAt = Date.now();
     const ctx = this.ensureContext();
     if (!ctx) return;
     const notes = [880, 1174.66];
@@ -74,6 +76,7 @@ class TourSoundEngine {
 
   playExpenseStamp() {
     if (this.muted) return;
+    this.lastNotificationSoundAt = Date.now();
     const ctx = this.ensureContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
@@ -104,6 +107,34 @@ class TourSoundEngine {
       osc.connect(gain).connect(ctx.destination);
       osc.start(t);
       osc.stop(t + 0.46);
+    });
+  }
+
+  /**
+   * Gentle, non-intrusive dual-note chime for real-time financial notifications.
+   * Throttled so rapid catch-up bursts never play overlapping chimes.
+   */
+  playNotificationPop(forceSkipCooldown = false) {
+    if (this.muted) return;
+    const now = Date.now();
+    if (!forceSkipCooldown && now - this.lastNotificationSoundAt < 1500) {
+      return;
+    }
+    this.lastNotificationSoundAt = now;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    const notes = [659.25, 987.77];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const start = ctx.currentTime + idx * 0.065;
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.04, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.23);
     });
   }
 

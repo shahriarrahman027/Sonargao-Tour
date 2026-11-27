@@ -38,7 +38,7 @@ import { ExpenseFormModal } from './ExpenseFormModal';
 const CHART_COLORS = ['#14452F', '#C45C3E', '#C89F3C', '#2E7D5B', '#7B5E42', '#4D7C8A', '#8E6C88'];
 
 export const FinanceDashboard: React.FC = () => {
-  const { lang, state, finance, session, isOnline, refreshState, showToast } = useTour();
+  const { lang, state, finance, session, isOnline, refreshState } = useTour();
   const t = translations[lang].money;
 
   const [search, setSearch] = useState('');
@@ -790,7 +790,6 @@ export const FinanceDashboard: React.FC = () => {
               e.preventDefault();
               await tourApi.voidExpenseWithAudit(voidingExpense.id, voidReason);
               await refreshState();
-              showToast(lang === 'bn' ? 'খরচ অডিটসহ বাতিল হয়েছে' : 'Expense voided with audit log');
               setVoidingExpense(null);
             }}
             onClick={(e) => e.stopPropagation()}

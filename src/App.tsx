@@ -11,6 +11,7 @@ import { FinanceDashboard } from './components/FinanceDashboard';
 import { HomepageSection } from './components/HomepageSection';
 import { JourneySection } from './components/JourneySection';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { MoneyNotificationToast } from './components/MoneyNotificationToast';
 import { MoreFeaturesSection } from './components/MoreFeaturesSection';
 import { Navbar, type NavTab } from './components/Navbar';
 import { PhotosSection } from './components/PhotosSection';
@@ -125,6 +126,8 @@ const TourShell: React.FC = () => {
       <MobileBottomNav activeTab={activeTab} onSelectTab={navigate} />
 
       <AdminUnlockModal open={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+
+      <MoneyNotificationToast onOpenMoney={() => navigate('money')} />
 
       {toastBanner}
     </div>

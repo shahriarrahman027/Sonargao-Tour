@@ -26,7 +26,7 @@ interface Props {
 }
 
 export const ExpenseFormModal: React.FC<Props> = ({ open, editingExpense, onClose }) => {
-  const { lang, state, refreshState, showToast } = useTour();
+  const { lang, state, refreshState } = useTour();
   const members = state?.members || [];
 
   const [title, setTitle] = useState(editingExpense?.title || '');
@@ -227,15 +227,6 @@ export const ExpenseFormModal: React.FC<Props> = ({ open, editingExpense, onClos
 
       soundEngine.playExpenseStamp();
       await refreshState();
-      showToast(
-        editingExpense
-          ? lang === 'bn'
-            ? 'খরচ অডিটসহ আপডেট হয়েছে'
-            : 'Expense updated with audit record'
-          : lang === 'bn'
-            ? 'নতুন খরচ সফলভাবে রেকর্ড হয়েছে'
-            : 'Expense recorded cleanly',
-      );
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save expense');

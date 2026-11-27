@@ -20,6 +20,7 @@ import {
 import { useTour } from '../context/TourContext';
 import { translations } from '../lib/i18n';
 import { GlobalMusicControl } from './GlobalMusicControl';
+import { NotificationCenter } from './NotificationCenter';
 import { ThemeSelector } from './ThemeSelector';
 
 export type NavTab =
@@ -134,7 +135,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-contain shrink-0 ring-1 ring-[#D4AF37]/45 shadow-xs group-hover:scale-105 transition-transform"
             />
             <div className="min-w-0 leading-tight">
-              <div className="font-editorial text-sm sm:text-base font-bold text-[#14452F] dark:text-[#FAF7F0] whitespace-nowrap truncate max-w-[125px] sm:max-w-none">
+              <div className="font-editorial text-sm sm:text-base font-bold text-[#14452F] dark:text-[#FAF7F0] whitespace-nowrap truncate max-w-[100px] sm:max-w-[160px] md:max-w-none">
                 {brandTitle}
               </div>
               {session && (
@@ -215,7 +216,9 @@ export const Navbar: React.FC<Props> = ({ activeTab, onSelectTab, onOpenAdminMod
           </nav>
 
           {/* RIGHT: Controls Cluster */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <NotificationCenter onOpenMoney={() => handleNavClick('money')} />
+
             <GlobalMusicControl />
 
             {/* Desktop Sound Toggle */}

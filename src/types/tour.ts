@@ -303,3 +303,47 @@ export interface GateStatus {
   tagline_en: string;
   require_group_passcode: boolean;
 }
+
+export type MoneyNotificationKind =
+  | 'expense_created'
+  | 'expense_updated'
+  | 'expense_voided'
+  | 'expense_reimbursed'
+  | 'contribution_added'
+  | 'contribution_refund';
+
+export type RealtimeConnectionStatus = 'connected' | 'connecting' | 'reconnecting' | 'offline';
+
+export interface RealtimeMoneySignal {
+  eventKey: string;
+  kind: MoneyNotificationKind | 'tour_sync' | 'reconnect_sync';
+  entityId?: string;
+  actorMemberId?: string | null;
+  occurredAt: string;
+}
+
+export interface MoneyNotification {
+  eventKey: string;
+  id: string;
+  kind: MoneyNotificationKind;
+  emoji: string;
+  title_bn: string;
+  title_en: string;
+  message_bn: string;
+  actorMemberId?: string | null;
+  actorNameBn: string;
+  actorNameEn: string;
+  affectedMemberIds: string[];
+  affectedLabelBn: string;
+  affectedLabelEn: string;
+  amount: number;
+  category?: ExpenseCategory;
+  fundingSource?: FundingSource;
+  relevantBalanceLabelBn: string;
+  relevantBalanceLabelEn: string;
+  remainingGroupCash: number;
+  viewerBalance?: number | null;
+  createdAt: string;
+  read: boolean;
+  dismissed: boolean;
+}

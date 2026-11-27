@@ -15,6 +15,7 @@ import {
   DEFAULT_TOUR_SETTINGS,
   DEV_MEMBER_HASH_MAP,
 } from '../data/defaultSeed';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type {
   ActivityLogEntry,
   AllocationMode,
@@ -31,6 +32,8 @@ import type {
   ItineraryItem,
   Member,
   Poll,
+  RealtimeConnectionStatus,
+  RealtimeMoneySignal,
   SessionInfo,
   SharedNote,
   TourPhoto,
@@ -196,6 +199,72 @@ function assertOnlineForFinance() {
 }
 
 let activeSupabaseMemberId: string | null = null;
+type RealtimeSyncCallback = (signal?: RealtimeMoneySignal) => void;
+const LOCAL_REALTIME_CHANNEL_NAME = 'ek_diner_tour_realtime_v1';
+const SUPABASE_REALTIME_CHANNEL_NAME = 'tour-realtime-sync';
+
+const localRealtimeListeners = new Set<RealtimeSyncCallback>();
+let activeSupabaseChannel: RealtimeChannel | null = null;
+let sharedBroadcastChannel: BroadcastChannel | null = null;
+
+function getSharedBroadcastChannel(): BroadcastChannel | null {
+  if (typeof BroadcastChannel === 'undefined') return null;
+  if (!sharedBroadcastChannel) {
+    sharedBroadcastChannel = new BroadcastChannel(LOCAL_REALTIME_CHANNEL_NAME);
+  }
+  return sharedBroadcastChannel;
+}
+
+async function publishRealtimeMoneySignal(signal: RealtimeMoneySignal): Promise<void> {
+  // 1. Trigger in-tab listeners immediately so the local session updates smoothly
+  localRealtimeListeners.forEach((cb) => {
+    try {
+      cb(signal);
+    } catch {
+      // ignore subscriber callback error
+    }
+  });
+
+  // 2. Notify sibling browser tabs on the same origin (covers local dev & multi-tab testing)
+  try {
+    getSharedBroadcastChannel()?.postMessage(signal);
+  } catch {
+    // ignore BroadcastChannel failures in restricted contexts
+  }
+
+  // 3. Push over Supabase Realtime Broadcast so all online crew members receive immediately
+  const sb = getSupabaseClient();
+  if (!sb) return;
+
+  try {
+    const channel =
+      activeSupabaseChannel ||
+      sb.getChannels().find((c) => c.topic === `realtime:${SUPABASE_REALTIME_CHANNEL_NAME}`);
+
+    if (channel && channel.state === 'joined') {
+      await channel.send({
+        type: 'broadcast',
+        event: 'money_event',
+        payload: signal,
+      });
+      return;
+    }
+
+    if (channel) {
+      await channel.httpSend('money_event', signal);
+      return;
+    }
+
+    const tempChannel = sb.channel(SUPABASE_REALTIME_CHANNEL_NAME);
+    try {
+      await tempChannel.httpSend('money_event', signal);
+    } finally {
+      await sb.removeChannel(tempChannel);
+    }
+  } catch {
+    // Fallback reconnect diffing ensures receiving clients still catch up cleanly
+  }
+}
 
 async function resolveSupabaseMemberId(): Promise<string> {
   if (activeSupabaseMemberId) return activeSupabaseMemberId;
@@ -544,10 +613,20 @@ export const tourApi = {
         created_at: new Date().toISOString(),
       });
       saveDevDb(state);
+      void publishRealtimeMoneySignal({
+        eventKey: `contrib:${newContrib.id}`,
+        kind:
+          newContrib.amount < 0 || newContrib.is_correction
+            ? 'contribution_refund'
+            : 'contribution_added',
+        entityId: newContrib.id,
+        actorMemberId: session.member.id,
+        occurredAt: newContrib.created_at,
+      });
       return;
     }
 
-    const { error } = await sb.rpc('record_contribution', {
+    const { data, error } = await sb.rpc('record_contribution', {
       p_member_id: input.member_id,
       p_amount: roundMoney(input.amount),
       p_payment_method: input.payment_method,
@@ -558,6 +637,17 @@ export const tourApi = {
       p_corrects_id: input.corrects_id || null,
     });
     if (error) throw new Error(error.message);
+    const createdId = typeof data === 'string' ? data : '';
+    void publishRealtimeMoneySignal({
+      eventKey: createdId ? `contrib:${createdId}` : `contrib_sync:${Date.now()}`,
+      kind:
+        roundMoney(input.amount) < 0 || Boolean(input.is_correction)
+          ? 'contribution_refund'
+          : 'contribution_added',
+      entityId: createdId || undefined,
+      actorMemberId: activeSupabaseMemberId,
+      occurredAt: new Date().toISOString(),
+    });
   },
 
   async createExpense(input: {
@@ -629,10 +719,17 @@ export const tourApi = {
         created_at: now,
       });
       saveDevDb(state);
+      void publishRealtimeMoneySignal({
+        eventKey: `expense:${id}`,
+        kind: 'expense_created',
+        entityId: id,
+        actorMemberId: session.member.id,
+        occurredAt: now,
+      });
       return;
     }
 
-    const { error } = await sb.rpc('create_expense_with_allocations', {
+    const { data, error } = await sb.rpc('create_expense_with_allocations', {
       p_title: input.title,
       p_category: input.category,
       p_total_amount: roundMoney(input.total_amount),
@@ -646,6 +743,14 @@ export const tourApi = {
       p_expense_at: input.expense_at || new Date().toISOString(),
     });
     if (error) throw new Error(error.message);
+    const createdId = typeof data === 'string' ? data : '';
+    void publishRealtimeMoneySignal({
+      eventKey: createdId ? `expense:${createdId}` : `expense_sync:${Date.now()}`,
+      kind: 'expense_created',
+      entityId: createdId || undefined,
+      actorMemberId: activeSupabaseMemberId,
+      occurredAt: new Date().toISOString(),
+    });
   },
 
   async updateExpenseWithAudit(input: {
@@ -689,11 +794,13 @@ export const tourApi = {
         previous_snapshot: {
           title: prev.title,
           total_amount: prev.total_amount,
+          is_reimbursed: prev.is_reimbursed,
           allocations: prev.allocations,
         },
         new_snapshot: {
           title: input.title,
           total_amount: roundMoney(input.total_amount),
+          is_reimbursed: input.is_reimbursed ?? prev.is_reimbursed,
           allocations: input.allocations,
         },
         created_at: now,
@@ -731,6 +838,14 @@ export const tourApi = {
         created_at: now,
       });
       saveDevDb(state);
+      const reimbursedJustNow = !prev.is_reimbursed && Boolean(input.is_reimbursed);
+      void publishRealtimeMoneySignal({
+        eventKey: `expense_edit:${editEntry.id}`,
+        kind: reimbursedJustNow ? 'expense_reimbursed' : 'expense_updated',
+        entityId: prev.id,
+        actorMemberId: session.member.id,
+        occurredAt: now,
+      });
       return;
     }
 
@@ -749,6 +864,13 @@ export const tourApi = {
       p_is_reimbursed: Boolean(input.is_reimbursed),
     });
     if (error) throw new Error(error.message);
+    void publishRealtimeMoneySignal({
+      eventKey: `expense_edit_sync:${input.expense_id}:${Date.now()}`,
+      kind: Boolean(input.is_reimbursed) ? 'expense_reimbursed' : 'expense_updated',
+      entityId: input.expense_id,
+      actorMemberId: activeSupabaseMemberId,
+      occurredAt: new Date().toISOString(),
+    });
   },
 
   async voidExpenseWithAudit(expenseId: string, reason: string): Promise<void> {
@@ -791,6 +913,13 @@ export const tourApi = {
         created_at: now,
       });
       saveDevDb(state);
+      void publishRealtimeMoneySignal({
+        eventKey: `expense_void:${prev.id}`,
+        kind: 'expense_voided',
+        entityId: prev.id,
+        actorMemberId: session.member.id,
+        occurredAt: now,
+      });
       return;
     }
 
@@ -799,6 +928,13 @@ export const tourApi = {
       p_reason: reason.trim(),
     });
     if (error) throw new Error(error.message);
+    void publishRealtimeMoneySignal({
+      eventKey: `expense_void:${expenseId}`,
+      kind: 'expense_voided',
+      entityId: expenseId,
+      actorMemberId: activeSupabaseMemberId,
+      occurredAt: new Date().toISOString(),
+    });
   },
 
   async uploadReceipt(file: File): Promise<string> {
@@ -1309,21 +1445,109 @@ export const tourApi = {
     if (error) throw new Error(error.message);
   },
 
-  subscribeToRealtime(onChange: () => void): () => void {
+  subscribeToRealtime(
+    onChange: (signal?: RealtimeMoneySignal) => void,
+    onStatusChange?: (status: RealtimeConnectionStatus) => void,
+  ): () => void {
+    localRealtimeListeners.add(onChange);
+
+    const bc = getSharedBroadcastChannel();
+    const onBcMessage = (evt: MessageEvent<RealtimeMoneySignal>) => {
+      onChange(evt.data);
+    };
+    bc?.addEventListener('message', onBcMessage);
+
+    const onStorage = (evt: StorageEvent) => {
+      if (evt.key === DEV_STORE_KEY) {
+        onChange();
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', onStorage);
+    }
+
     const sb = getSupabaseClient();
-    if (!sb) return () => {};
+    if (!sb) {
+      const online = typeof navigator === 'undefined' ? true : navigator.onLine;
+      onStatusChange?.(online ? 'connected' : 'offline');
+      return () => {
+        localRealtimeListeners.delete(onChange);
+        bc?.removeEventListener('message', onBcMessage);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('storage', onStorage);
+        }
+      };
+    }
+
+    onStatusChange?.('connecting');
+    let hasSubscribedOnce = false;
+    let wasDisconnected = false;
+
     const channel = sb
-      .channel('tour-realtime-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contributions' }, onChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, onChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tour_progress' }, onChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, onChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, onChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shared_notes' }, onChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'checklist_items' }, onChange)
-      .subscribe();
+      .channel(SUPABASE_REALTIME_CHANNEL_NAME, {
+        config: { broadcast: { self: false } },
+      })
+      .on('broadcast', { event: 'money_event' }, ({ payload }) => {
+        onChange(payload as RealtimeMoneySignal);
+      })
+      .on('broadcast', { event: 'tour_sync' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contributions' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_log' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tour_progress' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shared_notes' }, () => {
+        onChange();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'checklist_items' }, () => {
+        onChange();
+      });
+
+    activeSupabaseChannel = channel;
+
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        onStatusChange?.('connected');
+        if (hasSubscribedOnce && wasDisconnected) {
+          wasDisconnected = false;
+          onChange({
+            eventKey: `reconnect:${Date.now()}`,
+            kind: 'reconnect_sync',
+            occurredAt: new Date().toISOString(),
+          });
+        }
+        hasSubscribedOnce = true;
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        wasDisconnected = true;
+        const online = typeof navigator === 'undefined' ? true : navigator.onLine;
+        onStatusChange?.(online ? 'reconnecting' : 'offline');
+      }
+    });
 
     return () => {
+      localRealtimeListeners.delete(onChange);
+      bc?.removeEventListener('message', onBcMessage);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', onStorage);
+      }
+      if (activeSupabaseChannel === channel) {
+        activeSupabaseChannel = null;
+      }
       void sb.removeChannel(channel);
     };
   },
